@@ -1,1 +1,0 @@
-# Gatsby course sections text
