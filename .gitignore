@@ -1,5 +1,8 @@
 # vs code
 *.code-workspace
+.DS_Store
+.vscode/
 
 # project
 node_modules
+
