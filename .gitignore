@@ -6,4 +6,5 @@
 # project
 node_modules
 .cache
+public/
 
