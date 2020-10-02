@@ -1,27 +1,24 @@
 import React from 'react';
-import { Link, navigate } from 'gatsby';
-
-function goToSlicematers() {
-  setTimeout(() => {
-    console.log('Go to slicers!!!');
-    navigate('/slicemaster', { replace: true });
-  }, 2000);
-}
+import { Link } from 'gatsby';
 
 export default function Nav() {
   return (
     <nav>
       <ul>
         <li>
-          <Link to="/">Home</Link>
+          <Link to="/">Hot Now</Link>
         </li>
         <li>
-          <Link to="/beers">Beers</Link>
+          <Link to="/pizzas/">Pizza Menu</Link>
         </li>
         <li>
-          <button type="button" onClick={goToSlicematers}>
-            Click me to see slicemaster after 2 seconds
-          </button>
+          <Link to="/">Logo</Link>
+        </li>
+        <li>
+          <Link to="/slicemaster">Slicemaster</Link>
+        </li>
+        <li>
+          <Link to="/order">Order Ahead!</Link>
         </li>
       </ul>
     </nav>

@@ -1,6 +1,6 @@
 # Gatsby course modules text
 
-In this course, we will check [gatsby](https://www.gatsbyjs.com/docs/) which is a framework to build websites with `react`. In each module, we will have some text that will help me to write about what I will be learning.
+In this course, we will check [gatsby](https://www.gatsbyjs.com/docs/) which is a framework to build websites with `react`. In each module, we will have some text that will help me to write about what I will be learning. In this course, they are assuming that you have some pre-existing knowledge about `js`, `react`; `node` and some basic understanding of some configurations that are used.
 
 ## Module 1: Getting setup
 
@@ -107,3 +107,128 @@ By default `gatsby` will automatically create a `404` page for you and on develo
 - You should see `gatsby` 404 page
 - Click on the `Preview custom 404 page` button
 - You should see your custom 404 message
+
+### Routing and Navigation on Gatsby
+
+Like we mention before `gatsby` has its own routing strategy so we don't need to add some extra package to manage that. We are going to illustrate this creating a `Nav` component
+
+- First on your editor go to the create a new file call `Nav.js` on the` gatsby / src / components` directory
+- On that newly create file import `react`:`import React from 'react';`
+- Export a function call `Nav`
+  ```js
+  export default function Nav () {
+    return ();
+  }
+  ```
+- Inside of the `return` statement add a` nav` with a `ul` child; then add with 2 `li` tags as children of the` ul` tag and inside of each `li` tag place an anchor that get you to the` home` page and the `beers` page
+  ```js
+  export default function Nav () {
+    return (
+      <nav>
+        <ul>
+          <li>
+            <Link to = "/"> Home </Link>
+          </li>
+          <li>
+            <Link to = "/ beers" Beers </Link>
+          </li>
+        </ul>
+      </nav>
+    );
+  }
+  ```
+- Now go to the `slicemaster.js` file in the` pages` directory
+- Import the `Nav` component:`import Nav from '../ components / Nav';`
+- Use the `Nav` component inside of the` div` in the `return` statement
+- On your console go to the `gatsby` directory and run your local server using:` npm start`
+- Go to the [slidemaster page] (http: // localhost: 8000 / slicemaster)
+- You should see 2 links above
+- Click on the `Home` link
+- You should be redirected to the `Home` page
+- Now go to the `index.js` and` beers` page and add the `Nav` component like we did on the` slicemaster` page
+- Now you can see that every time you click on a link the page reload and change it content and for 1 second the content desapear; to fix this we will use some of the function that `Gatsby` have in this case the` Link` component. Go to the `Nav` component and import the` Link` component from `gastby`
+  `import {Link} from 'gatsby';`
+- Update the `anchors` to use the` Link` component
+  ```js
+  return (
+      <nav>
+        <ul>
+          <li>
+            <Link to = "/"> Home </Link>
+          </li>
+          <li>
+            <Link to = "/ beers" Beers </Link>
+          </li>
+        </ul>
+      </nav>
+    );
+  ```
+- Now go back to the `beers` page
+- Click on the `Home` link
+- You should that the page content update with the `home` content real fast instead of relaoding the page. This is because we are swping out the components each time we click a link instead of reloding the page; also will do a html file push to change the url and add it to the browser history
+- Some time we need to programally change the pages like when someone submit a form or click a specific button and not rely on the user clicking a link we use `navigate`. On the `Nav` component impor` navigate` from `gastby`
+  `import {Link, navigate} from 'gatsby';`
+- Do another `li` and add a button with the following message
+  ```js
+  return (
+      <nav>
+        <ul>
+          <li>
+            <Link to = "/"> Home </Link>
+          </li>
+          <li>
+            <Link to = "/ beers" Beers </Link>
+          </li>
+          <li>
+            <button type = "button" onClick = {goToSlicematers}>
+              Click me to see slicemaster after 2 seconds
+            </button>
+        </li>
+        </ul>
+      </nav>
+    );
+  ```
+- Create a function above the `Nav`function call` goToSlicematers`: `function goToSlicematers () {}`
+- Now add a `setTimeout` function and` console` a message
+  ```js
+  function goToSlicematers() {
+    setTimeout(() => {
+      console.log("Go to slicers !!!");
+    }, 2000);
+  }
+  ```
+- Now bellow of the console add the `navigate` function
+  ```js
+  function goToSlicematers() {
+    setTimeout(() => {
+      console.log("Go to slicers !!!");
+      navigate("/ slicemaster", { replace: true });
+    }, 2000);
+  }
+  ```
+  The `navigate` function receives the` URL` of the page that you will redirect and a configuration object in this case we send the `replace` property as` true` so the `URL` that we redirect will be added to the browser history
+- For this example we are not going to use the `navigation` function so delete all code related of the` Nav` component
+- Then add the following `li` items
+  ```js
+  return (
+    <nav>
+      <ul>
+        <li>
+          <Link to="/"> Hot Now </Link>
+        </li>
+        <li>
+          <Link to="/ pizzas /"> Pizza Menu </Link>
+        </li>
+        <li>
+          <Link to="/"> Logo </Link>
+        </li>
+        <li>
+          <Link to="/ slicemaster"> Slicemaster </Link>
+        </li>
+        <li>
+          <Link to="/ order"> Order Ahead! </Link>
+        </li>
+      </ul>
+    </nav>
+  );
+  ```
