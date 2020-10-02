@@ -232,3 +232,101 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
     </nav>
   );
   ```
+
+### Creating layouts in Gatsby
+
+As you see on the example of the preview we import several times the `Nav` components but we want like a general structure to handle this instead of repeating ourself over and over on each page component so we will create a general `layout` for our pages that contain the `Nav` component that we create before. `Gatsby` doesn't have a special way to handle this type of `layout` so we will use `react` components with children (There is a way to use a `gatsby` specific feature that we are going to use at the end of this section)
+
+- First on your editor go to the `src/components` directory
+- Create a new file call `Footer.js`
+- In this newly created file import `react`: `import React from 'react';`
+- Export a function call `Footer`: `export default function Footer() {}`
+- Return on the `Footer` function a `footer` tag with the following content
+  ```js
+  export default function Footer() {
+    return (
+      <footer>
+        <p>&copy; Slick Slices {new Date().getFullYear()}</p>
+      </footer>
+    );
+  }
+  ```
+- Now on the `component` directory create a file call `Layout.js`
+- On that newly created file; import `react`: `import React from 'react';`
+- Now export a function call `Layout`: `export default function Layout() {}`
+- Import the `Nav` component: `import Nav from './Nav';`
+- Import the `Footer` component: `import Footer from './Footer';`
+- Now return a `react` fragment using the `Nav` component; a `p` tag with a message and the `Footer` component
+  ```js
+  export default function Layout() {
+    return (
+      <>
+        <Nav />
+        <p>I am the page content</p>
+        <Footer />
+      </>
+    );
+  }
+  ```
+- Now go to the `index.js` file on the `page` directory
+- Import the `Layout` component: `import Layout from '../components/Layout';`
+- Then enclose the content of the `index` page using the `Layout` component
+  ```js
+  export default function HomePage() {
+    return (
+      <Layout>
+        <p>Hey! Im home page</p>
+      </Layout>
+    );
+  }
+  ```
+- On your terminal go to the `gatsby` directory
+- Run your local server using: `npm start`
+- On your browser go to the [homepage](http://localhost:8000/)
+- You should see the `nav`; the `p` tag content of the `Layout` component and the `footer`
+- Now we need to make the content of the current page avilable instead of the message of the `Layout` component. For this we will use the `props` that recive the `Layout` component; in this case the `children` prop that have the content that we need because we send the `p` tag as child of `Layout` on the `index.js` file. So use destructuring to use this prop on the `Layout` function
+  `export default function Layout({ children }) {}`
+- Then on the return statement use this child prop between the `Nav` and `Footer` component
+  ```js
+  export default function Layout({ children }) {
+    return (
+      <>
+        <Nav />
+        {children}
+        <Footer />
+      </>
+    );
+  }
+  ```
+- Now on your browser go to the [homepage](http://localhost:8000/)
+- You should see the `nav`; the message that is on the `index.js` file and the `footer` component
+- Now we end with something similar to the issue that we describe early because we will need to import the `Layout` component to every `page` that we need but we can use a `gatsby` custom files that automaclly wrap the `pages` for use. On the `gatsby` root directory create a file call `gatsby-browser.js`.
+
+  The `gatsby-browser.js` is a specific `gatsby` file that will allow us to hook into different `gatsby` APIs if we need to. By default `gatsby` don't wrap our pages with something unless we use the `element` prop.
+
+- On this newly created file import `react` and the `Layout` component
+  ```js
+  import React from "react";
+  import Layout from "./src/components/Layout";
+  ```
+- Then export a function call `wrapPageElement`: `export function wrapPageElement() {}`
+
+  The name `wrapPageElement` is recomended by the [gatsby documentation](https://www.gatsbyjs.com/docs/browser-apis/#wrapPageElement).
+
+- The `wrapPageElement` will recive 2 props `element` and `props`
+  `export function wrapPageElement({ element, props }) {}`
+
+  Now `gatsby` will check for this function when the `page` render
+
+- Then return the `Layout` component sending the `props` as prop of `Layout` and `element` as it children
+  ```js
+  export function wrapPageElement({ element, props }) {
+    return <Layout {...props}>{element}</Layout>;
+  }
+  ```
+- Now go to the `index.js` file and remove any reference of the `Layout` component
+- Now go to your terminal and restart your local server. Are you don't do this the update of the `gatsby-browser.js` will not be reflected on the page
+- You should see on every page with the `nav`; the content of the `page` and the `footer`
+- Go to every page component and remove every reference of the `Nav` and `Layout` component
+- Finally on the `gatsby` directory create a file called `gatsby-ssr.js`
+- Copy the content of the `gatsby-browser.js` and paste it on the `gatsby-ssr.js` file. The `gatsby-browser` file will only work on the browser because this file will run when the page has been loaded but `gatsby` also generate everything on the server so we need to use the `gatsby-ssr` to have this function available
