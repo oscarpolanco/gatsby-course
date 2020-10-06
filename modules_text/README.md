@@ -372,6 +372,20 @@ The [styled-components](https://styled-components.com/docs) is a way to do `scop
 - Paste it in the file that you just created
 - Go to the `Layout` component and import the `GlobalStyles` that you created
   `import GlobalStyles from '../styles/GlobalStyles';`
+- Use the `GlobalStyle` component on the return statement
+  ```js
+  export default function Layout({ children }) {
+    return (
+      <div>
+        <GlobalStyles />
+        <Typography />
+        <Nav />
+        {children}
+        <Footer />
+      </div>
+    );
+  }
+  ```
 - On your terminal go to the `gatsby` directory and run your local server using: `npm start`
 - You should see a background update and if you check the browser console on the element tag you should see some of the style of the page
 
@@ -385,3 +399,31 @@ On the `GlobalStyles` we have the following:
 - Then we have some base style for out `HTML`, `body`, `fieldset`, `button`
 - We select all the `gatsby` images using the `.gatsby-image-wrapper img[src*=base64\\,]` selector before that they are fully rendered. `Gatsby` under the hood render `images` with multiple formats that with fallback its one doesn't work on a specific browser; also put multiple sizes of that `image` so depending the user screen will render a smaller or larger version of the `image` and before it loads all different images from the server it will render a `base 64 image` that in our case you can scale that `image` and made a blur effect before the other `images` load as you see in the style on that selector
 - After the `image` style we have the `scrollbar` style; some custom `hr` style and a `max-with` for all `images`
+
+### Typography
+
+This will like the `global` style that we added before but this will be in its own separate file because if we need to update some `font` we quickly can update it.
+
+- First; on your editor in the `gatsby/src/styles` create a file call `Typography.js`
+- Go to my [repository](https://github.com/oscarpolanco/gatsby-course/tree/master/gatsby/src/styles/Typography.js) and copy the content of the `Typography.js` file
+- Paste the content on the file that you just created
+- Now on the `Layout` component import the `Typography` file
+  `import Typography from '../styles/Typography';`
+- Use the `Typography` component on the return statement
+  ```js
+  export default function Layout({ children }) {
+    return (
+      <div>
+        <GlobalStyles />
+        <Typography />
+        <Nav />
+        {children}
+        <Footer />
+      </div>
+    );
+  }
+  ```
+- Now on your terminal start your local server using: `npm start`
+- On your browser you should see a change of the text in the page
+
+If you see at the top of the file we import a `font` the same way as we do in the `global` style's `SVG` so `gatsby` know about the `font` that we are going to use.
