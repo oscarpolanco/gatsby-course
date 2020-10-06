@@ -330,3 +330,58 @@ As you see on the example of the preview we import several times the `Nav` compo
 - Go to every page component and remove every reference of the `Nav` and `Layout` component
 - Finally on the `gatsby` directory create a file called `gatsby-ssr.js`
 - Copy the content of the `gatsby-browser.js` and paste it on the `gatsby-ssr.js` file. The `gatsby-browser` file will only work on the browser because this file will run when the page has been loaded but `gatsby` also generate everything on the server so we need to use the `gatsby-ssr` to have this function available
+
+## Module 3: CSS in Gatsby
+
+Generally, you make available your `CSS` in your code using a `link` tag and add the path to the actual file that contains all the `CSS`  that you want to add; like this:
+
+`<link rel="stylesheet" href="./my_path" />`
+
+But this will be against the idea of `gatsby` because it needs to know about your `CSS`; this is because `gatsby` can maKe a decision such as what `CSS` your page need to have available so `gatsby` put that `CSS` before the actual page. There are a couple of ways to import `CSS` in `Gatsby` but for this example, we will use `style` components but some of the other ways will be mention next ending with our actual approach.
+
+### Ways to import your style
+
+#### Import the style
+
+- First; on your editor go to the `src/styles` directory and create a file call `red.css`
+- Add the following to that file:
+  ```css
+  body {
+    background: red;
+  }
+  ```
+- Now go to the `gatsby-browser.js` file and import your `red.css` file
+  `import './src/styles/red.css';`
+- Then on your terminal go to the `gatsby` directory and run your local server using: `npm start`
+- Go to the [homepage](http://localhost:8000/)
+- You should see a `red` background on your page. Now `gatsby` will know that this `CSS` is necessary in order to do  the first render but at this moment since we are on development mode in the local server when you use the `page source` option on the browser you will no see this style but is your run a build you will see that this `CSS` is added on the page in a `style` tag
+
+#### Use css-modules
+
+You can `css-modules`; [here](https://www.gatsbyjs.com/docs/css-modules/#reach-skip-nav) is the explanation of the official `gatsby` docs about the subject. We won't use it as part of the process of this example.
+
+#### Styled-components
+
+The [styled-components](https://styled-components.com/docs) is a way to do `scope` CSS inside of `react` applications and will be used across this example. Now we will create the `global` style of the application:
+
+- First; delete everything you did add the `red.css` file
+- Now we are going to eliminate all the default styles that the browser add by default on our page using `normalize.css`(this is a module that we add on the default configuration); so on the `Layout` component in the `gatsby/src/components` directory; import `normalize.css`
+  `import 'normalize.css';`
+- Then on the `src/style` directory; create a file called `GlobalStyles.js`
+- Go to my [repository](https://github.com/oscarpolanco/gatsby-course/tree/master/gatsby/src/styles/GlobalStyles.js) and copy all the content of the file 
+- Paste it in the file that you just created
+- Go to the `Layout` component and import the `GlobalStyles` that you created
+  `import GlobalStyles from '../styles/GlobalStyles';`
+- On your terminal go to the `gatsby` directory and run your local server using: `npm start`
+- You should see a background update and if you check the browser console on the element tag you should see some of the style of the page
+
+##### GlobalStyles.js content
+
+On the `GlobalStyles` we have the following:
+
+- First; we got the [createGlobalStyle](https://styled-components.com/docs/api#createglobalstyle) function; that is a helper to handle global styling.
+- Then we import the `SVG` that we are going to use. `Gatsby` knows that this is not valid `js` and doesn't render as a `js` module it just output the actual file that you need in this case an `SVG`; also it's done this way because we want `gatsby` to know about those `SVG` and if we don't do it this way we will have to put the `static` folder reference. If you check the `background-img` on the style section on your browser console you will see that `gatsby` add a unique identifier to the `SVG` name that will be updated so it will not be cached by the browser
+- Then some `CSS` variables are add-in `:root` so we have all of then available to all our `CSS`
+- Then we have some base style for out `HTML`, `body`, `fieldset`, `button`
+- We select all the `gatsby` images using the `.gatsby-image-wrapper img[src*=base64\\,]` selector before that they are fully rendered. `Gatsby` under the hood render `images` with multiple formats that with fallback its one doesn't work on a specific browser; also put multiple sizes of that `image` so depending the user screen will render a smaller or larger version of the `image` and before it loads all different images from the server it will render a `base 64 image` that in our case you can scale that `image` and made a blur effect before the other `images` load as you see in the style on that selector
+- After the `image` style we have the `scrollbar` style; some custom `hr` style and a `max-with` for all `images`
