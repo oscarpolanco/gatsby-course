@@ -333,7 +333,7 @@ As you see on the example of the preview we import several times the `Nav` compo
 
 ## Module 3: CSS in Gatsby
 
-Generally, you make available your `CSS` in your code using a `link` tag and add the path to the actual file that contains all the `CSS`  that you want to add; like this:
+Generally, you make available your `CSS` in your code using a `link` tag and add the path to the actual file that contains all the `CSS` that you want to add; like this:
 
 `<link rel="stylesheet" href="./my_path" />`
 
@@ -354,7 +354,7 @@ But this will be against the idea of `gatsby` because it needs to know about you
   `import './src/styles/red.css';`
 - Then on your terminal go to the `gatsby` directory and run your local server using: `npm start`
 - Go to the [homepage](http://localhost:8000/)
-- You should see a `red` background on your page. Now `gatsby` will know that this `CSS` is necessary in order to do  the first render but at this moment since we are on development mode in the local server when you use the `page source` option on the browser you will no see this style but is your run a build you will see that this `CSS` is added on the page in a `style` tag
+- You should see a `red` background on your page. Now `gatsby` will know that this `CSS` is necessary in order to do the first render but at this moment since we are on development mode in the local server when you use the `page source` option on the browser you will no see this style but is your run a build you will see that this `CSS` is added on the page in a `style` tag
 
 #### Use css-modules
 
@@ -368,7 +368,7 @@ The [styled-components](https://styled-components.com/docs) is a way to do `scop
 - Now we are going to eliminate all the default styles that the browser add by default on our page using `normalize.css`(this is a module that we add on the default configuration); so on the `Layout` component in the `gatsby/src/components` directory; import `normalize.css`
   `import 'normalize.css';`
 - Then on the `src/style` directory; create a file called `GlobalStyles.js`
-- Go to my [repository](https://github.com/oscarpolanco/gatsby-course/tree/master/gatsby/src/styles/GlobalStyles.js) and copy all the content of the file 
+- Go to my [repository](https://github.com/oscarpolanco/gatsby-course/tree/master/gatsby/src/styles/GlobalStyles.js) and copy all the content of the file
 - Paste it in the file that you just created
 - Go to the `Layout` component and import the `GlobalStyles` that you created
   `import GlobalStyles from '../styles/GlobalStyles';`
@@ -427,3 +427,147 @@ This will like the `global` style that we added before but this will be in its o
 - On your browser you should see a change of the text in the page
 
 If you see at the top of the file we import a `font` the same way as we do in the `global` style's `SVG` so `gatsby` know about the `font` that we are going to use.
+
+### Styling Nav and logo
+
+Now we will check how we make styles on our components and check step by step some of the styles to learn a few things about `CSS`. Here are the steps and some brief explanation
+
+- First; on your editor go to the `Nav` component
+- Import the `style` object from the `styled-components` module
+  `import styled from 'styled-components';`
+- Now before the `Nav` function creates a constant call `NavStyle`(The `style` in the name is not necessary is just personal preference). That constant will be equal to the `styled` object calling the element that you want in this case a `nav` element
+  ```js
+  const NavStyles = styled.nav``;
+  ```
+- Then add some style on the constant. For example:
+  ```js
+  const NavStyles = styled.nav`
+    background: red;
+  `;
+  ```
+- On the return statement substitute the `nav` element for `NavStyle`
+- Now on your editor go to the `gatsby` directory and run your local server using: `npm start`
+- Go to your browser and you should see the `nav` of the page with a `red` background
+- Go back to the `Nav` component
+- Add an `anchor` selector rule in `NavStyle` like this:
+  ```js
+  const NavStyles = styled.nav`
+    background: red;
+    a {
+      background: green;
+    }
+  `;
+  ```
+- Go back to your browser and you should see every link with a `green` background
+- Then go to the `index.js` page
+- Where is the content of the page add an `anchor` tag with an example message
+- Go back to the browser(on the homepage) and you should see that the link doesn't have the `green` background because we explicitly add the style for the `nav` element in the `Nav` component so we encapsulate the style in one element
+
+  Useful advice makes the top element a `styled component` and use selectors for styling the children unless the style of the children will be reused multiple times; in that case, we can do separate `styled-components`
+
+- No remove remove everything we use on the `background` example except the `NavStyles` constant
+- Now begin with the style!! First; add the following:
+
+  ```js
+  const NavStyles = styled.nav`
+    margin-bottom: 3rem;
+    ul {
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto 1fr 1fr;
+      grid: 2rem;
+      text-align: center;
+      list-style: none;
+      align-items: center;
+    }
+  `;
+  ```
+
+  Here we add some `margin` to the complete `nav` element to separate from the other elements and the border of the page. Then we organize the `ul` element that will not have any `margin` or `padding` because we are going to use a `grid` alignment and each element will occupy one (fr)[https://www.w3.org/TR/css3-grid-layout/#fr-unit] and the middle one is the `logo` and will have as much space as it needs and we add some [gap](https://developer.mozilla.org/en-US/docs/Web/CSS/gap) between the columns; then we eliminate the list style and align the content to the center.
+
+  If you notice for some of the values we use [rem](https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Values_and_units#Relative_length_units) that will be the value of the [font size](https://github.com/oscarpolanco/gatsby-course/blob/master/gatsby/src/styles/GlobalStyles.js#L17) times the predecessor number(the `font-size` of the global style file).
+
+- Now add the style the `li` with the following
+
+  ```js
+  const NavStyles = styled.nav`
+    margin-bottom: 3rem;
+    ul {...}
+    li {
+      --rotate: -2deg;
+      transform: rotate(var(--rotate));
+      order: 1;
+      &::nth-child(1) {
+        --rotate: 1deg;
+      }
+      &::nth-child(2) {
+        --rotate: -2.5deg;
+      }
+      &::nth-child(4) {
+        --rotate: 2.5deg;
+      }
+      &:hover {
+        --rotate: 3deg;
+      }
+    }
+  `;
+  ```
+
+  Now we define a `css` variable call `rotate` to use it accross the selector; first rotating all element by `-2 degrees` then adding a `order` that will help us with the `media-queries` later. Then we need to override the `rotate` value on each element so we use `pseudo` selectors(`nth-child`) that help us to choose each `li` element and put a unique rule and change each value changing the `rotate` variable. We do it this way because is you try to override a `translate` with a rule and that `traslate` have more than 1 value will be override complete. Here is an example:
+
+  ```css
+  li {
+    transform: rotate(rotate(-2deg) scale(4));
+    &::nth-child(1) {
+      transform: rotate(rotate(1deg));
+    }
+  }
+  ```
+
+  In this example, all `li` elements will be `rotate` by `-2deg` and will be `scale` by 4 except the first child that only will be `rotate` by `1deg` and will not be `scale`.
+
+  Finally, on `hover` of each `li` element, we will `rotate` by `3deg`. Is worth mentioning that we could use a nesting selector for the `li` in other words the `li` inside of the `ul` selector but is better to avoid the nesting if is necessary.
+
+- Now we continue with the `anchor` tag
+
+```js
+const NavStyles = styled.nav`
+  margin-bottom: 3rem;
+  ul {...}
+  li {...}
+  a {
+    font-size: 3rem;
+    text-decoration: none;
+    &:hover {
+      color: var(--red);
+    }
+  }
+`;
+```
+
+Here we will have just add a `font-size` depending on the `font-size` of the global style and a `color` when the link is `hover` using the previously define `red` variable on the global style
+
+- Now we need to add the `logo` so go to this [link](https://github.com/oscarpolanco/gatsby-course/blob/master/gatsby/src/components/Logo.js) and copy its content
+- Now go to the `components` directory and create a `Logo.js` file
+- Paste the content that you copy before in this newly created file. Just a few things to mention on this file; first; that we add `className` on some of the elements because we will need to add some styling on other components that handle the logo.
+
+  If you see at the top of the `LogoStyle` constant it use [clamp](https://developer.mozilla.org/en-US/docs/Web/CSS/clamp) on the `font-size` so this means that we going to have a `minimum`; `middle` and `maximum` pixel size so when you `scale` your browser the `font-size` will `scale` with it and with that said you will see that the values of the other properties are `em` so will be change with the `font-size` that use `clamp`.
+
+- Now go to the `Nav` component and import the `Logo` component
+  `import Logo from './Logo';`
+- Then replace the word `Logo` on the return statement for the `Logo` component
+- Now go back to the `NavStyle` constant and add the `logo` selector with the following
+  ```js
+  const NavStyles = styled.nav`
+    margin-bottom: 3rem;
+    .logo {
+      transform: translateY(-25%);
+    }
+    ul {...}
+    li {...}
+    a {...}
+    }
+  `;
+  ```
+  This `transform` will give the logo a base without adding any `margin` or `padding`. For the moment will be hiding at the top of the page but is ok; later will be updated.
