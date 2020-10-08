@@ -8,6 +8,7 @@
 
 - [React](https://reactjs.org/) on the `client` of the application
 - [Gatsby](https://www.gatsbyjs.com/) for the `client` of our  application
+- [Styled-components](https://styled-components.com/) for the `client` styles
 
 ## Pages
 
