@@ -571,3 +571,95 @@ Here we will have just add a `font-size` depending on the `font-size` of the glo
   `;
   ```
   This `transform` will give the logo a base without adding any `margin` or `padding`. For the moment will be hiding at the top of the page but is ok; later will be updated.
+
+### Styling our layout
+
+Now we are going to work on the style of the content of the page.
+
+- First; go to the `Layout.js` file
+- Import the `styled` function from `styled-component`
+- Before the `Layout` function create a constant call `ContentStyles` using the `styled` function for a `div`
+  ```js
+  const ContentStyles = styled.div``;
+  ```
+- Now add the following on the `ContentStyles`:
+  ```js
+  const ContentStyles = styled.div`
+    background: white;
+    padding: 2rem;
+  `;
+  ```
+- Then use the `ContentStyles` on the return statement using the `Nav` component and `children` as it child
+  ```js
+  export default function Layout({ children }) {
+    return (
+      <>
+        <GlobalStyles />
+        <Typography />
+        <ContentStyles>
+          <Nav />
+          {children}
+          <Footer />
+        </ContentStyles>
+      </>
+    );
+  }
+  ```
+- Import the `stripes` svg from the `asset/images` directory
+  `import stripes from '../assets/images/stripes.svg';`
+- Now we are going to add the a border in the content of the page and limit the site to a specific sizes. Create a constant call `SiteBorderStyles`
+  ```js
+  const SiteBorderStyles = styled.div``;
+  ```
+- Add the following style:
+
+  ```js
+  const SiteBorderStyles = styled.div`
+    max-width: 1000px;
+    margin: 12rem auto 4rem auto;
+    margin-top: clamp(2rem, 10vw, 12rem);
+    background: white url(${stripes});
+    background-size: 1500px;
+    padding: 5px;
+    padding: clamp(5px, 1vw, 25px);
+    box-shadow: 0 0 5px 3px rgba(0, 0, 0, 0, 0.044);
+    border: 5px solid white;
+    @media (max-width: 1100px) {
+      margin-left: 1.5rem;
+      margin-right: 1.5rem;
+    }
+  `;
+  ```
+
+  First; we add a maximun size of the content of a `1000px` then add some space on all content side and allways be centered in the page. Then we overide the `margin-top` that we previously defined so it will change with the sizes of the logo but `clamp` is not supported by all browser so in case that `clamp` doesn't work will have the first one as it value.
+
+  Now we add the `stripe` svg as a background of our content container that in combination of the previous that we define on the `ContentStyles` will looks like a border of all the content and add a size to that `background`.
+
+  Now we add a `padding` so the content is push a little bit and we can add some border on the content and follow the same `clamp` strategy of override the previous one. Then we add some shadow to the content container and border.
+
+  Finally we add some more space on the sides of the content when you are bellow `1100px` screen size.
+
+- Now go to the `Nav` component and add some `margin` on the `ul` selector to push a little bit to the top of the page the logo
+  ```js
+  const NavStyles = styled.nav`
+    margin-bottom: 3rem;
+    .logo {...}
+    ul {
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto 1fr 1fr;
+      grid-gap: 2rem;
+      text-align: center;
+      list-style: none;
+      align-items: center;
+      margin-top: -6rem;
+    }
+    li {...}
+    a {...}
+  `;
+  ```
+
+#### Note:
+
+- One important thing is that if you want to custom the links that belong to the current page; you will see that this link have an `aria-current="page"` that you can target for styling like this: `&[aria-current="page"] {...}`
