@@ -663,3 +663,155 @@ Now we are going to work on the style of the content of the page.
 #### Note:
 
 - One important thing is that if you want to custom the links that belong to the current page; you will see that this link have an `aria-current="page"` that you can target for styling like this: `&[aria-current="page"] {...}`
+
+## Module 4: Headless CMS
+
+We are going to begin the work with the backend side of our application and for this step, we are going to use [sanity](https://www.sanity.io/) that is a `headless CMS` and that means that there are no frontend or theme to actually view the data in your website this mean that `sanity` is just the backend. To see the data on our frontend we going to inject the data that we build on `sanity` via `Gatsby`.
+
+We already install `sanity` at the beginning of this example and have some pre-load files that are on the repository on the `sanity` directory but normally you produce a new `sanity` project doing the command `sanity init` that will give you some folders to begin to work.
+
+Now we need to initialize the add:
+
+- First, on your terminal go to the `sanity` directory
+- Now we need to create a new `dataset` using this command:
+  `sanity init --reconfigure`
+
+  If you don't have a `sanity` account yet; this command will redirect you to the `sanity` page to do it; follow the steps and login with your new account and continue with the process on your terminal. If you wanna some time to `log in` again just use the `sanity login` command
+
+- Then it will show a series of questions that will help you to create a new project and the first one is actually is `create a new project`
+- Now put the name of the project. To follow the example I put `slicks-slices-custom_name`
+- For now, we will use the default `dataset` configuration so add `Yes`. This will create the `dataset` on the `sanity` dashboard
+- If you don't have any problems you can run `sanity` using: `npm start`
+
+  This command will run the `sanity start` command that will run a local server with `sanity studio` that will be the UI that we will interact
+
+- If everything is ok it will ask you to log in and you will see an empty `schema` message so this mean that you are up a running
+
+### Creating a schema on sanity
+
+If you see on the `sanity.json` a property called `parts` and in that property points us to the `schema` file in the `schemas` directory so automatically `sanity` will check for this file in order to see your `schemas` unless you want to create your custom one.
+
+On the `schema` file it will take all our `datatypes` and concatenate into our `schema`.
+
+#### Creating our first schema
+
+- First; our your editor go to the `sanity/schemas` directory and create a file call `pizza.js`
+- Then export an object in this newly created file: `export default {...}`
+- Then add the following properties to the object:
+
+  ```js
+  export default {
+    name: "pizza",
+    title: "Pizza",
+    type: "document",
+    fields: [
+      {
+        name: "name",
+        title: "Pizza name",
+        type: "string",
+        description: "Name of the pizza",
+      },
+    ],
+  };
+  ```
+
+  The difference between the `name` and `title` is that the name is for the `schema` and the `title` is the visible name for the UI. Then we add the type of the object that will be [document](https://www.sanity.io/docs/groq-data-types#document-b9acc83522bf) that are objects with some properties added by `sanity`. Finally, we add a `fields` property that will have an array of objects with the same characteristics of the previous properties defined but instead of referring to the `schema` will be related to the `field`
+
+- Now on the `schema.js` file in the same directory import your `pizza` schema
+  `import pizza from './pizza';`
+- On the `concat` function array add the `pizza` name
+  `types: schemaTypes.concat([pizza]),`
+
+  Now the browser will reload automatically and you will see that you can create some `pizza` data(don't do it just yet; we are going to add some more fields)
+
+- Now we are going to add an `icon` property to the main object in the `pizza.js` file. Add the following:
+
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    icon: () => 'xxxx',
+    fields: [...]
+  }
+  ```
+
+  Since everything on `sanity` is a `react` component we can send a `react` component if we want on the properties but actually we are going to be using a `package` that have all this icons call `react-icons`
+
+- At the top of the file import `MdLocalPizza` as `icon` from `react-icons/md`
+  `import { MdLocalPizza as icon } from 'react-icons/md';`
+- Now use it on the object like this:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    icon: () => 'xxxx',
+    fields: [...]
+  }
+  ```
+- We can continue adding the files and the first one is the `slug` field:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {
+        name: 'slug',
+        title: 'Slug',
+        type: 'slug',
+        options: {
+          source: 'name',
+          maxLength: 100,
+        },
+      }
+    ]
+  }
+  ```
+  The difference with the other objects in that we got an `options` property that receives an object of options for the field; the first one is `source` that will add the content of the `slug` field using the content that you previously put on the `name` field and will have a max length of a 100 characters and since is a `slug` type it will slugify the content
+- Then we add a `image` field:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {...},
+      {
+        name: 'image',
+        title: 'Image',
+        type: 'image',
+        options: {
+          hotspot: true,
+        },
+      ]
+    }
+  }
+  ```
+  When you put `hotspot` true on the `options` property; when you edit the image you will have a crop option available where you can highlight the thing of the image that you want only to show and will make sure that on every version of the image that spot will be on the center
+- Finally we will add the the `price` field
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {...},
+      {...},
+      {
+        name: 'price',
+        title: 'Price',
+        type: 'number',
+        description: 'Price of the pizza in cents',
+        validation: (Rule) => Rule.min(1000),
+        // TODO: Add custom input component
+      },
+    ]
+  }
+  ```
+  Since we need to be a minimum 10 dollar pizza we will use the `validation` property. This property will give you the `Rule` object as a parameter that has a number of helpers that will help you to do the validation that you want and this is a function so you can add your custom logic to validate the field
+- Now you can create your first pizza. Fill the form and submit the information(On the `sample-data` directory you will find some images of pizzas that you can use)
