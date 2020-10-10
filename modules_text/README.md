@@ -815,3 +815,97 @@ On the `schema` file it will take all our `datatypes` and concatenate into our `
   ```
   Since we need to be a minimum 10 dollar pizza we will use the `validation` property. This property will give you the `Rule` object as a parameter that has a number of helpers that will help you to do the validation that you want and this is a function so you can add your custom logic to validate the field
 - Now you can create your first pizza. Fill the form and submit the information(On the `sample-data` directory you will find some images of pizzas that you can use)
+
+### Creating the toppings content and custom previews
+
+Now we are going to a new `schema` for the `toppings` and this will have a relation with the `pizza schema` where the `pizzas` will have many `toppings` related so after creating the actual `topping schema` we will create that relationship.
+
+- First; on the `schema` directory create a new file call `topping.js`
+- Then import the `FaPepperHot` icon and name it as `icon` from the `react-icons/fa` library
+  `import { FaPepperHot as icon } from 'react-icons/fa';`
+- Now export an object that will represent the `schema`
+  ```js
+  export default {
+    name: "topping",
+    title: "Toppings",
+    type: "document",
+    icon,
+  };
+  ```
+- Lets begin to create the fields; the first one will be the `name` field
+  ```js
+  export default {
+    name: "topping",
+    title: "Toppings",
+    type: "document",
+    icon,
+    fields: [
+      {
+        name: "name",
+        title: "Topping name",
+        type: "string",
+        description: "What is the name of the topping?",
+      },
+    ],
+  };
+  ```
+- Then we will add a `checkbox` to mark if the `topping` if `vegetarian` or not
+  ```js
+  export default {
+  ...
+  fields: [
+    {...},
+    {
+      name: 'vegetarian',
+      title: 'Vegetarian',
+      type: 'boolean',
+      description: 'What is the name of the topping?',
+      options: { layout: 'checkbox' },
+    },
+  ],
+  ```
+- Go to the `schema.js` file and import the `toppling` schema
+  `import topping from './topping';`
+- Then add `toppling` to the `types` concat array
+  `types: schemaTypes.concat([pizza, topping])`
+- Now on your terminal go to the `sanity` directory and start your local server using: `npm start`
+- Go to the `sanity studio` [page](http://localhost:3333/)
+- You should see the new `Toppings` option
+- Create some `toppings` such as bacon; mushrooms; onions; peperoni and mark some of them as `vegetarian`
+- Now go back to your editor and will be adding a `preview` for each `topping`
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+    ],
+    preview: {
+      select: {
+        name: 'name',
+        vegetarian: 'vegetarian',
+      },
+    },
+  };
+  ```
+
+  The `preview` property will `select` the `field` name as the name of the topping and will have access to the `vegetarian` value but we still need a `prepare` property to actually see the value
+
+- Add the following `prepare` property:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+    ],
+    preview: {...},
+      prepare: ({ name, vegetarian }) => ({
+        title: `${name} ${vegetarian ? '🌱' : ''}`,
+      }),
+    },
+  };
+  ```
+  So whatever is returned in the `prepare` function will be shown as the `title`; the `prepare` function receives the `fields` object but we use destructuring to get the actual property values. We will show a `leaf` emoji for the `vegetarian toppling`
+- Now check on the `sanity` dashboard and you will see that have the title and on the `vegetarian toppling` you will see an emoji
