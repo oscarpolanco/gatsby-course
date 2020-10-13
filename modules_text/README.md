@@ -1060,3 +1060,149 @@ export default createSchema({
 ```
 
 Finally, go to your browser and add a `slicemaster`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
+
+### Custom CMS inputs in Sanity
+
+We are going to add our custom `input` to `sanity studio` so we can add our custom logic in this case the `price` input that is on the `pizza` schema so we can have the actual `price` shown as you write and with the conversion from cents to dollars. We can do this because `sanity studio` is a `react` base cms that we are hosting ourselves for the moment.
+
+- First; on your editor create a new directory call `components` in the `sanity/schema` directory
+- On that newly created directory create a new file call `PriceInput.js`
+- Inside of that file import `react`: `import React from 'react';`
+- Now export a function call `PriceInput`
+  `export default function PriceInput() {}`
+- Add the following parameters for the function
+  `export default function PriceInput({ type, value, onChange, inputComponent }) {...}`
+
+  `Sanity` send to your custom component a bunch of `props` depending on where you use it so all the data that it uses it before to render their component is passed to your custom one
+
+- Then put a return statement with the following:
+
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input type={type.name} value={value} />
+      </div>
+    );
+  }
+  ```
+
+  One thing before to dive in on the custom component is that the style of the input, in this case, will not be equal to what `sanity` use for the components because `sanity` add a bunch of classes in their components and we are not using those in our custom one.
+
+  First, we use the `type` object that has the information that we defined previously on the `fields` array of the `pizza` schema in this case the `title` that are defined on the `select` object of the `preview`, the `description` is defined on the object related to the `price` field. The `name` property also is defined on the `field` object related to the `input` and the `value` have the actual value of the input
+
+- Every time you put an `input` with a `value` on `react` you will need an `onChange` property on that input but before we do this we need to import some functions so our custom component work well with `sanity studio`. First import the `PatchEvent`, `set` and `unset` functions:
+  `import PatchEvent, { set, unset } from 'part:@sanity/form-builder/patch-event';`
+- Now create a function call `createPatchFrom` that recive `value`
+  `function createPatchFrom(value) {}`
+- Now return the `PatchEvent` with the following:
+
+  ```js
+  function createPatchFrom(value) {
+    return PatchEvent.from(value === "" ? unset() : set(Number(value)));
+  }
+  ```
+
+  We run the `PatchEvent` sending the `unset` or `set` function where the input has a value or not. The `set` value will as its name said `set` the value of the input if it exists and `unset` the opposite. We put `Number` on the `set` parameter because even the `input` is type `number` the value will be a `string`
+
+- Now add a `onChange` property on the input that we created before using the `createPatchFrom` to send the value to `sanity` to patch itself for things like live updating and preview
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input
+          type={type.name}
+          value={value}
+          onChange={(event) => onChange(createPatchFrom(event.target.value))}
+        />
+      </div>
+    );
+  }
+  ```
+- Then we need to add the reference to the actual `inputComponent`
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input
+          type={type.name}
+          value={value}
+          onChange={(event) => onChange(createPatchFrom(event.target.value))}
+          ref={inputComponent}
+        />
+      </div>
+    );
+  }
+  ```
+- Now we need to expose a `focus` method so `sanity` can run it. So bellow the `PriceInput` function add the following:
+  ```js
+  PriceInput.focus = function () {
+    this._inputElement.focus();
+  };
+  ```
+- Now we need to add the `format` value on the `h2`; so we will have the price on dollar and that price will be update immediately with the information that you put on the price input. Add the following before the `PriceInput` function
+  ```js
+  const formatMoney = Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format;
+  ```
+  The [Intl](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl) is an object that provides us with some tools to format numbers and strings depending on the function that you use and the configuration that you send to that function; in this case, is a `currency` of `US` dollars
+- Then we need to add the value on the `h2` tag and wrap that value on using `formatMoney` and devide the value by a `100` because the value of the input is on cents. Finally; ask if we actually have a value so we can put a empty string instead of calling `formatMoney`
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>
+          {type.title} - {value ? formatMoney(value / 100) : ""}
+        </h2>
+        ...
+      </div>
+    );
+  }
+  ```
+- Now go to the `pizza.js` file on the `schema` directory
+- Import the `PriceInput` component
+  `import PriceInput from '../components/PriceInput';`
+- Search for the `price` field and add the following:
+  ```js
+  {
+    name: 'price',
+    title: 'Price',
+    type: 'number',
+    description: 'Price of the pizza in cents',
+    validation: (Rule) => Rule.min(1000),
+    inputComponent: PriceInput,
+  }
+  ```
+  Putting the `inputComponent` property will override the previews configuration that you have with your custom component
+- Now on your terminal go to the `sanity` directory and run your local server using: `npm start`
+- On your browser go to the `pizzas` option
+- Click on one of the `pizza` that you create
+- You should see the `price` input and when you type a number you should see the price on the dollar next to the input title
