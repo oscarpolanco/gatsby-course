@@ -1002,3 +1002,61 @@ As you see we created a `schema` for `pizzas` and another one for `toppings` and
   };
   ```
   Now we receive all the things that we defined on the `select` property. If you notice we use a `rest` param to capture everything else that are not `title` and `media` in an object called `toppings` then we eliminate all the `undefined` on the `toppings` object and on the `return` statement `join` each array value of the `tops` array using a comma and space as a subtitle
+
+### Creating our person data type
+
+Now we need to create another `schema` to add the `slicemasters` information so we can show it on the frontend of the application. For this, we going to follow the same what we did before on the others `schemas`.
+
+```js
+import { MdPerson as icon } from "react-icons/md";
+
+export default {
+  name: "person",
+  title: "Slicemasters",
+  type: "document",
+  icon,
+  fields: [
+    {
+      name: "name",
+      title: "Name",
+      type: "string",
+    },
+    {
+      name: "slug",
+      title: "Slug",
+      type: "slug",
+      options: {
+        source: "name",
+        maxLength: 100,
+      },
+    },
+    {
+      name: "description",
+      title: "Description",
+      type: "text",
+      description: "Tell us a bit about the person",
+    },
+    {
+      name: "image",
+      title: "Image",
+      type: "image",
+      options: {
+        hotspot: true,
+      },
+    },
+  ],
+};
+```
+
+Then go to the `schema` directory and import the `person` schema and use it on the `type` concat array
+
+```js
+import person from "./person";
+
+export default createSchema({
+  name: "default",
+  types: schemaTypes.concat([pizza, topping, person]),
+});
+```
+
+Finally, go to your browser and add a `slicemaster`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
