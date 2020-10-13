@@ -909,3 +909,96 @@ Now we are going to a new `schema` for the `toppings` and this will have a relat
   ```
   So whatever is returned in the `prepare` function will be shown as the `title`; the `prepare` function receives the `fields` object but we use destructuring to get the actual property values. We will show a `leaf` emoji for the `vegetarian toppling`
 - Now check on the `sanity` dashboard and you will see that have the title and on the `vegetarian toppling` you will see an emoji
+
+### Creating data relationships
+
+As you see we created a `schema` for `pizzas` and another one for `toppings` and the idea behind this is that every pizza can have multiple toppings and we don't wanna write over an over the same toppings information on each pizza that we create so we are going to create a relation one to many to help us with this
+
+- First; on your editor go to the `pizza.js` file on the `sanity/schema/` directory
+- On the `fields` array add the following:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+  };
+  ```
+  The difference with the other `fields` is that we put a `type` of `array` because we want a one to many relationships and that will be an `array` of references so this is the reason that we don't reference directly to the `topping` schema. We use the property `of` to specify the content of the `array` and inside of the `array` we define the object that will be each item, in this case, will be an object with a special type call `reference` that will help us to `reference` to another `schema` and we use the `to` property to mention with `schema` we are referring. Normally you put only the `schema` name on the `to` property but imaging that we have multiple `schemas` that we need to relate with the pizza; for this, we will add an `array` of `types` that will reference each `schema`
+- Now on your terminal go to the `sanity` directory
+- Run your local server using: `npm start`
+- Go to the `Pizzas` section
+- Add the `toppings` on the `pizza` that you created before
+- Now we want to show more information about the `pizza` that you are creating; so go back to the `pizza.js` file on your editor
+- Bellow the `fields` property add the following
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+    preview: {
+    select: {
+      title: 'name',
+      media: 'image',
+      topping0: 'toppings.0.name',
+      topping1: 'toppings.1.name',
+      topping2: 'toppings.2.name',
+      topping3: 'toppings.3.name',
+    },
+  };
+  ```
+
+  The first thing you can notice is when we refer to the `name` field we put `title`; if you remember on the `select` property of the `toppings` we use `name` to reference the `name` field; this may be confusing some times because you can actually put whatever you want as the property name here and that name will be the parameter that you receive on the `prepare` function. We select the `image` that we add on the `image` field and finally, we add the `toppings`. We actually cannot call the complete field like `toppings: toppings` because that will give users an array of references but not the actual value so we need to reference like this to get the actual value:
+  `schemaNameIndex: 'schema.index.property'`
+
+  Like the `sanity` documentation said just to reference what you need no complete object. In this case, we will put the 4 `toppings`
+
+- Now we need to add the `prepare` function:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+    preview: {
+    select: {...},
+    prepare: ({ title, media, ...toppings }) => {
+      const tops = Object.values(toppings).filter(Boolean);
+      return {
+        title,
+        media,
+        subtitle: tops.join(', '),
+      };
+    },
+  };
+  ```
+  Now we receive all the things that we defined on the `select` property. If you notice we use a `rest` param to capture everything else that are not `title` and `media` in an object called `toppings` then we eliminate all the `undefined` on the `toppings` object and on the `return` statement `join` each array value of the `tops` array using a comma and space as a subtitle
