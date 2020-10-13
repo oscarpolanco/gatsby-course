@@ -663,3 +663,546 @@ Now we are going to work on the style of the content of the page.
 #### Note:
 
 - One important thing is that if you want to custom the links that belong to the current page; you will see that this link have an `aria-current="page"` that you can target for styling like this: `&[aria-current="page"] {...}`
+
+## Module 4: Headless CMS
+
+We are going to begin the work with the backend side of our application and for this step, we are going to use [sanity](https://www.sanity.io/) that is a `headless CMS` and that means that there are no frontend or theme to actually view the data in your website this mean that `sanity` is just the backend. To see the data on our frontend we going to inject the data that we build on `sanity` via `Gatsby`.
+
+We already install `sanity` at the beginning of this example and have some pre-load files that are on the repository on the `sanity` directory but normally you produce a new `sanity` project doing the command `sanity init` that will give you some folders to begin to work.
+
+Now we need to initialize the add:
+
+- First, on your terminal go to the `sanity` directory
+- Now we need to create a new `dataset` using this command:
+  `sanity init --reconfigure`
+
+  If you don't have a `sanity` account yet; this command will redirect you to the `sanity` page to do it; follow the steps and login with your new account and continue with the process on your terminal. If you wanna some time to `log in` again just use the `sanity login` command
+
+- Then it will show a series of questions that will help you to create a new project and the first one is actually is `create a new project`
+- Now put the name of the project. To follow the example I put `slicks-slices-custom_name`
+- For now, we will use the default `dataset` configuration so add `Yes`. This will create the `dataset` on the `sanity` dashboard
+- If you don't have any problems you can run `sanity` using: `npm start`
+
+  This command will run the `sanity start` command that will run a local server with `sanity studio` that will be the UI that we will interact
+
+- If everything is ok it will ask you to log in and you will see an empty `schema` message so this mean that you are up a running
+
+### Creating a schema on sanity
+
+If you see on the `sanity.json` a property called `parts` and in that property points us to the `schema` file in the `schemas` directory so automatically `sanity` will check for this file in order to see your `schemas` unless you want to create your custom one.
+
+On the `schema` file it will take all our `datatypes` and concatenate into our `schema`.
+
+#### Creating our first schema
+
+- First; our your editor go to the `sanity/schemas` directory and create a file call `pizza.js`
+- Then export an object in this newly created file: `export default {...}`
+- Then add the following properties to the object:
+
+  ```js
+  export default {
+    name: "pizza",
+    title: "Pizza",
+    type: "document",
+    fields: [
+      {
+        name: "name",
+        title: "Pizza name",
+        type: "string",
+        description: "Name of the pizza",
+      },
+    ],
+  };
+  ```
+
+  The difference between the `name` and `title` is that the name is for the `schema` and the `title` is the visible name for the UI. Then we add the type of the object that will be [document](https://www.sanity.io/docs/groq-data-types#document-b9acc83522bf) that are objects with some properties added by `sanity`. Finally, we add a `fields` property that will have an array of objects with the same characteristics of the previous properties defined but instead of referring to the `schema` will be related to the `field`
+
+- Now on the `schema.js` file in the same directory import your `pizza` schema
+  `import pizza from './pizza';`
+- On the `concat` function array add the `pizza` name
+  `types: schemaTypes.concat([pizza]),`
+
+  Now the browser will reload automatically and you will see that you can create some `pizza` data(don't do it just yet; we are going to add some more fields)
+
+- Now we are going to add an `icon` property to the main object in the `pizza.js` file. Add the following:
+
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    icon: () => 'xxxx',
+    fields: [...]
+  }
+  ```
+
+  Since everything on `sanity` is a `react` component we can send a `react` component if we want on the properties but actually we are going to be using a `package` that have all this icons call `react-icons`
+
+- At the top of the file import `MdLocalPizza` as `icon` from `react-icons/md`
+  `import { MdLocalPizza as icon } from 'react-icons/md';`
+- Now use it on the object like this:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    icon: () => 'xxxx',
+    fields: [...]
+  }
+  ```
+- We can continue adding the files and the first one is the `slug` field:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {
+        name: 'slug',
+        title: 'Slug',
+        type: 'slug',
+        options: {
+          source: 'name',
+          maxLength: 100,
+        },
+      }
+    ]
+  }
+  ```
+  The difference with the other objects in that we got an `options` property that receives an object of options for the field; the first one is `source` that will add the content of the `slug` field using the content that you previously put on the `name` field and will have a max length of a 100 characters and since is a `slug` type it will slugify the content
+- Then we add a `image` field:
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {...},
+      {
+        name: 'image',
+        title: 'Image',
+        type: 'image',
+        options: {
+          hotspot: true,
+        },
+      ]
+    }
+  }
+  ```
+  When you put `hotspot` true on the `options` property; when you edit the image you will have a crop option available where you can highlight the thing of the image that you want only to show and will make sure that on every version of the image that spot will be on the center
+- Finally we will add the the `price` field
+  ```js
+  export default {
+    name: 'pizza',
+    title: 'Pizza',
+    type: 'document',
+    fields: [
+      {...},
+      {...},
+      {...},
+      {
+        name: 'price',
+        title: 'Price',
+        type: 'number',
+        description: 'Price of the pizza in cents',
+        validation: (Rule) => Rule.min(1000),
+        // TODO: Add custom input component
+      },
+    ]
+  }
+  ```
+  Since we need to be a minimum 10 dollar pizza we will use the `validation` property. This property will give you the `Rule` object as a parameter that has a number of helpers that will help you to do the validation that you want and this is a function so you can add your custom logic to validate the field
+- Now you can create your first pizza. Fill the form and submit the information(On the `sample-data` directory you will find some images of pizzas that you can use)
+
+### Creating the toppings content and custom previews
+
+Now we are going to a new `schema` for the `toppings` and this will have a relation with the `pizza schema` where the `pizzas` will have many `toppings` related so after creating the actual `topping schema` we will create that relationship.
+
+- First; on the `schema` directory create a new file call `topping.js`
+- Then import the `FaPepperHot` icon and name it as `icon` from the `react-icons/fa` library
+  `import { FaPepperHot as icon } from 'react-icons/fa';`
+- Now export an object that will represent the `schema`
+  ```js
+  export default {
+    name: "topping",
+    title: "Toppings",
+    type: "document",
+    icon,
+  };
+  ```
+- Lets begin to create the fields; the first one will be the `name` field
+  ```js
+  export default {
+    name: "topping",
+    title: "Toppings",
+    type: "document",
+    icon,
+    fields: [
+      {
+        name: "name",
+        title: "Topping name",
+        type: "string",
+        description: "What is the name of the topping?",
+      },
+    ],
+  };
+  ```
+- Then we will add a `checkbox` to mark if the `topping` if `vegetarian` or not
+  ```js
+  export default {
+  ...
+  fields: [
+    {...},
+    {
+      name: 'vegetarian',
+      title: 'Vegetarian',
+      type: 'boolean',
+      description: 'What is the name of the topping?',
+      options: { layout: 'checkbox' },
+    },
+  ],
+  ```
+- Go to the `schema.js` file and import the `toppling` schema
+  `import topping from './topping';`
+- Then add `toppling` to the `types` concat array
+  `types: schemaTypes.concat([pizza, topping])`
+- Now on your terminal go to the `sanity` directory and start your local server using: `npm start`
+- Go to the `sanity studio` [page](http://localhost:3333/)
+- You should see the new `Toppings` option
+- Create some `toppings` such as bacon; mushrooms; onions; peperoni and mark some of them as `vegetarian`
+- Now go back to your editor and will be adding a `preview` for each `topping`
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+    ],
+    preview: {
+      select: {
+        name: 'name',
+        vegetarian: 'vegetarian',
+      },
+    },
+  };
+  ```
+
+  The `preview` property will `select` the `field` name as the name of the topping and will have access to the `vegetarian` value but we still need a `prepare` property to actually see the value
+
+- Add the following `prepare` property:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+    ],
+    preview: {...},
+      prepare: ({ name, vegetarian }) => ({
+        title: `${name} ${vegetarian ? '🌱' : ''}`,
+      }),
+    },
+  };
+  ```
+  So whatever is returned in the `prepare` function will be shown as the `title`; the `prepare` function receives the `fields` object but we use destructuring to get the actual property values. We will show a `leaf` emoji for the `vegetarian toppling`
+- Now check on the `sanity` dashboard and you will see that have the title and on the `vegetarian toppling` you will see an emoji
+
+### Creating data relationships
+
+As you see we created a `schema` for `pizzas` and another one for `toppings` and the idea behind this is that every pizza can have multiple toppings and we don't wanna write over an over the same toppings information on each pizza that we create so we are going to create a relation one to many to help us with this
+
+- First; on your editor go to the `pizza.js` file on the `sanity/schema/` directory
+- On the `fields` array add the following:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+  };
+  ```
+  The difference with the other `fields` is that we put a `type` of `array` because we want a one to many relationships and that will be an `array` of references so this is the reason that we don't reference directly to the `topping` schema. We use the property `of` to specify the content of the `array` and inside of the `array` we define the object that will be each item, in this case, will be an object with a special type call `reference` that will help us to `reference` to another `schema` and we use the `to` property to mention with `schema` we are referring. Normally you put only the `schema` name on the `to` property but imaging that we have multiple `schemas` that we need to relate with the pizza; for this, we will add an `array` of `types` that will reference each `schema`
+- Now on your terminal go to the `sanity` directory
+- Run your local server using: `npm start`
+- Go to the `Pizzas` section
+- Add the `toppings` on the `pizza` that you created before
+- Now we want to show more information about the `pizza` that you are creating; so go back to the `pizza.js` file on your editor
+- Bellow the `fields` property add the following
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+    preview: {
+    select: {
+      title: 'name',
+      media: 'image',
+      topping0: 'toppings.0.name',
+      topping1: 'toppings.1.name',
+      topping2: 'toppings.2.name',
+      topping3: 'toppings.3.name',
+    },
+  };
+  ```
+
+  The first thing you can notice is when we refer to the `name` field we put `title`; if you remember on the `select` property of the `toppings` we use `name` to reference the `name` field; this may be confusing some times because you can actually put whatever you want as the property name here and that name will be the parameter that you receive on the `prepare` function. We select the `image` that we add on the `image` field and finally, we add the `toppings`. We actually cannot call the complete field like `toppings: toppings` because that will give users an array of references but not the actual value so we need to reference like this to get the actual value:
+  `schemaNameIndex: 'schema.index.property'`
+
+  Like the `sanity` documentation said just to reference what you need no complete object. In this case, we will put the 4 `toppings`
+
+- Now we need to add the `prepare` function:
+  ```js
+  export default {
+    ...
+    fields: [
+      {...},
+      {...},
+      {...},
+      {...},
+      {
+        name: 'toppings',
+        title: 'Toppings',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'topping' }] }],
+      },
+    ],
+    preview: {
+    select: {...},
+    prepare: ({ title, media, ...toppings }) => {
+      const tops = Object.values(toppings).filter(Boolean);
+      return {
+        title,
+        media,
+        subtitle: tops.join(', '),
+      };
+    },
+  };
+  ```
+  Now we receive all the things that we defined on the `select` property. If you notice we use a `rest` param to capture everything else that are not `title` and `media` in an object called `toppings` then we eliminate all the `undefined` on the `toppings` object and on the `return` statement `join` each array value of the `tops` array using a comma and space as a subtitle
+
+### Creating our person data type
+
+Now we need to create another `schema` to add the `slicemasters` information so we can show it on the frontend of the application. For this, we going to follow the same what we did before on the others `schemas`.
+
+```js
+import { MdPerson as icon } from "react-icons/md";
+
+export default {
+  name: "person",
+  title: "Slicemasters",
+  type: "document",
+  icon,
+  fields: [
+    {
+      name: "name",
+      title: "Name",
+      type: "string",
+    },
+    {
+      name: "slug",
+      title: "Slug",
+      type: "slug",
+      options: {
+        source: "name",
+        maxLength: 100,
+      },
+    },
+    {
+      name: "description",
+      title: "Description",
+      type: "text",
+      description: "Tell us a bit about the person",
+    },
+    {
+      name: "image",
+      title: "Image",
+      type: "image",
+      options: {
+        hotspot: true,
+      },
+    },
+  ],
+};
+```
+
+Then go to the `schema` directory and import the `person` schema and use it on the `type` concat array
+
+```js
+import person from "./person";
+
+export default createSchema({
+  name: "default",
+  types: schemaTypes.concat([pizza, topping, person]),
+});
+```
+
+Finally, go to your browser and add a `slicemaster`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
+
+### Custom CMS inputs in Sanity
+
+We are going to add our custom `input` to `sanity studio` so we can add our custom logic in this case the `price` input that is on the `pizza` schema so we can have the actual `price` shown as you write and with the conversion from cents to dollars. We can do this because `sanity studio` is a `react` base cms that we are hosting ourselves for the moment.
+
+- First; on your editor create a new directory call `components` in the `sanity/schema` directory
+- On that newly created directory create a new file call `PriceInput.js`
+- Inside of that file import `react`: `import React from 'react';`
+- Now export a function call `PriceInput`
+  `export default function PriceInput() {}`
+- Add the following parameters for the function
+  `export default function PriceInput({ type, value, onChange, inputComponent }) {...}`
+
+  `Sanity` send to your custom component a bunch of `props` depending on where you use it so all the data that it uses it before to render their component is passed to your custom one
+
+- Then put a return statement with the following:
+
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input type={type.name} value={value} />
+      </div>
+    );
+  }
+  ```
+
+  One thing before to dive in on the custom component is that the style of the input, in this case, will not be equal to what `sanity` use for the components because `sanity` add a bunch of classes in their components and we are not using those in our custom one.
+
+  First, we use the `type` object that has the information that we defined previously on the `fields` array of the `pizza` schema in this case the `title` that are defined on the `select` object of the `preview`, the `description` is defined on the object related to the `price` field. The `name` property also is defined on the `field` object related to the `input` and the `value` have the actual value of the input
+
+- Every time you put an `input` with a `value` on `react` you will need an `onChange` property on that input but before we do this we need to import some functions so our custom component work well with `sanity studio`. First import the `PatchEvent`, `set` and `unset` functions:
+  `import PatchEvent, { set, unset } from 'part:@sanity/form-builder/patch-event';`
+- Now create a function call `createPatchFrom` that recive `value`
+  `function createPatchFrom(value) {}`
+- Now return the `PatchEvent` with the following:
+
+  ```js
+  function createPatchFrom(value) {
+    return PatchEvent.from(value === "" ? unset() : set(Number(value)));
+  }
+  ```
+
+  We run the `PatchEvent` sending the `unset` or `set` function where the input has a value or not. The `set` value will as its name said `set` the value of the input if it exists and `unset` the opposite. We put `Number` on the `set` parameter because even the `input` is type `number` the value will be a `string`
+
+- Now add a `onChange` property on the input that we created before using the `createPatchFrom` to send the value to `sanity` to patch itself for things like live updating and preview
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input
+          type={type.name}
+          value={value}
+          onChange={(event) => onChange(createPatchFrom(event.target.value))}
+        />
+      </div>
+    );
+  }
+  ```
+- Then we need to add the reference to the actual `inputComponent`
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>{type.title}</h2>
+        <p>{type.description}</p>
+        <input
+          type={type.name}
+          value={value}
+          onChange={(event) => onChange(createPatchFrom(event.target.value))}
+          ref={inputComponent}
+        />
+      </div>
+    );
+  }
+  ```
+- Now we need to expose a `focus` method so `sanity` can run it. So bellow the `PriceInput` function add the following:
+  ```js
+  PriceInput.focus = function () {
+    this._inputElement.focus();
+  };
+  ```
+- Now we need to add the `format` value on the `h2`; so we will have the price on dollar and that price will be update immediately with the information that you put on the price input. Add the following before the `PriceInput` function
+  ```js
+  const formatMoney = Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format;
+  ```
+  The [Intl](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl) is an object that provides us with some tools to format numbers and strings depending on the function that you use and the configuration that you send to that function; in this case, is a `currency` of `US` dollars
+- Then we need to add the value on the `h2` tag and wrap that value on using `formatMoney` and devide the value by a `100` because the value of the input is on cents. Finally; ask if we actually have a value so we can put a empty string instead of calling `formatMoney`
+  ```js
+  export default function PriceInput({
+    type,
+    value,
+    onChange,
+    inputComponent,
+  }) {
+    return (
+      <div>
+        <h2>
+          {type.title} - {value ? formatMoney(value / 100) : ""}
+        </h2>
+        ...
+      </div>
+    );
+  }
+  ```
+- Now go to the `pizza.js` file on the `schema` directory
+- Import the `PriceInput` component
+  `import PriceInput from '../components/PriceInput';`
+- Search for the `price` field and add the following:
+  ```js
+  {
+    name: 'price',
+    title: 'Price',
+    type: 'number',
+    description: 'Price of the pizza in cents',
+    validation: (Rule) => Rule.min(1000),
+    inputComponent: PriceInput,
+  }
+  ```
+  Putting the `inputComponent` property will override the previews configuration that you have with your custom component
+- Now on your terminal go to the `sanity` directory and run your local server using: `npm start`
+- On your browser go to the `pizzas` option
+- Click on one of the `pizza` that you create
+- You should see the `price` input and when you type a number you should see the price on the dollar next to the input title
