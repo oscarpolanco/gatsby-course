@@ -1206,3 +1206,70 @@ We are going to add our custom `input` to `sanity studio` so we can add our cust
 - On your browser go to the `pizzas` option
 - Click on one of the `pizza` that you create
 - You should see the `price` input and when you type a number you should see the price on the dollar next to the input title
+
+## Module #5: Getting data into Gatsby with GraphQL
+
+At this point, we got a frontend implementation using `Gatsby` and a backend implementation using `sanity`. On the `sanity` part of the application, we create data that we need available on our site so we need something that helps us with this and that something is [GraphQL](https://graphql.org/) that is a data query and manipulation language for APIs.
+
+`Gatsby` already has a playground for you on development mode just need to run your local server(for this project `npm start`) and look at the output in the terminal and you will see this URL `http://localhost:8000/___graphql`. You will see that the site has some `queries` that you can use but at this moment we will not use then they are more for the low-level plugin dev.
+
+Add build-time `Gatsby` will go and gather all the data that it needs in order to run in our case the `sanity` data; then stick all this data in memory and allow us to make `queries` via `graphQL query`.
+
+Now that we spoke a little bit of `graphQL` with `Gatsby` we need to know how we are going to bring all the data that we need from `sanity` and the way that we do this is via `plugins` and those `plugins` are defined on the [Gatsby config file](https://www.gatsbyjs.com/docs/gatsby-config/). Most of the time you will use this file to specify `plugins` that are used on your website but you can also specify `metadata` of your site; `pathPrefix` that will help you to deploy your add to a path on a domain and some more things.
+
+### First query using graphQL
+
+- First; on your editor in the root of the `gatsby` directory create a file called `gatsby-config.js`
+- Now export an object
+  `export default {}`
+
+  If you notice on the documentation you will see that they use `common js` modules but here we add `ES6 modules` and the reason that we can do this is; because we set this env variable on the script of the `package.json`: `NODE_OPTIONS=\"-r esm\" `
+
+- Then add a property call `siteMetadata` and it value is an object
+  ```js
+  export default {
+    siteMetadata: {},
+  };
+  ```
+- Add the following on the `siteMetadata` object:
+  ```js
+  siteMetadata: {
+    title: `Slick Slices`,
+    siteUrl: `https://gatsby.pizza`,
+    description: `The best pizza place in Hamilton!`,
+  }
+  ```
+- Now go to your terminal and run your local server using: `npm start`
+  If you already have the server running you will need to restart your server so the changes can be avilable
+- Now go to the [graphQL page](http://localhost:8000/___graphql)
+- On the middle window delete everything that it have
+- Add an object call `query`
+  `query {}`
+- Inside of the object add `site`
+  ```js
+  query {
+    site {}
+  }
+  ```
+- Inside of `site` add the `siteMetadata`
+  ```js
+  query {
+    site {
+      siteMetadata {}
+    }
+  }
+  ```
+- Then add the same names that you add on the `gatsby-config.js` file inside of the `siteMetadata` object
+  ```js
+  query {
+    site {
+      siteMetadata {
+        description
+        siteUrl
+        title
+      }
+    }
+  }
+  ```
+- Click on the play button at the top
+- You should see the information that you add in the third window
