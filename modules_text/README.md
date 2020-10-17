@@ -1273,3 +1273,417 @@ Now that we spoke a little bit of `graphQL` with `Gatsby` we need to know how we
   ```
 - Click on the play button at the top
 - You should see the information that you add in the third window
+
+### Sourcing Sanity data and GraphQL introduction
+
+In this section we are going to use`plugins` that make working with other packages; libraries or services easy to work with `gatsby` in this case `Sanity` to get all data that we need on the page. On `gatsby` we define the plugin on the `gatsby-config.js` file. Here are the steps to do it:
+
+- First; on your editor go to the `gatsby-config.js` file on the root of the `gatsby` directory
+- Then; bellow the `siteMetadata` property add another one call `plugins` that will have an array
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [],
+  };
+  ```
+- Now we are going to add some plugins. There are 2 different ways to define a `plugin`; one is to specify the name of the `plugin` and accept all the default options that it have like the next one:
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+    ],
+  };
+  ```
+  This is a style component `plugin` that surfaces the `CSS` to `gatsby` so it can figure out what is the critical `CSS` is and do everything that it needs to do
+- The other way to specify a `plugin` that have some configuration that you need to send; you will define an object with a `resolve` property that is the name of the `plugin` then you need to add an `options` property that will have all the configuration that you need. In this case, we will add the `gatsby-source-sanity` that will help us to get the data from `Sanity`
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+      {
+        resolve: 'gatsby-source-sanity',
+        options: {},
+      },
+    ],
+  };
+  ```
+- On the `options` object we will add a `projectId` property
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+      {
+        resolve: 'gatsby-source-sanity',
+        options: {
+          projectId: 'your_project_id',
+        },
+      },
+    ],
+  };
+  ```
+  To get the `projectId` need to follow the next steps:
+  - Go to https://manage.sanity.io/ (log in if you don't have an active session)
+  - Select the project that you create before on the `sanity` running process
+  - Copy the `project ID` bellow the tittle of the project
+  - Paste it on the `gatsby-config.js` file
+- Now we need to add the dataset property:
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+      {
+        resolve: 'gatsby-source-sanity',
+        options: {
+          projectId: 'your_project_id',
+          dataset: 'your_dataset_name',
+        },
+      },
+    ],
+  };
+  ```
+  To check the name you can follow the next steps:
+  - On the https://manage.sanity.io/ site and after you choose a project the is a `Datasets` option bellow the project name
+  - Click on that option
+  - Copy the name of your `dataset` in this example we have `production` as `dataset` name
+  - Paste if on the `dataset` property on the `gatsby-config.js` file
+- Add the `watchMode` as true
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+      {
+        resolve: 'gatsby-source-sanity',
+        options: {
+          projectId: 'your_project_id',
+          dataset: 'your_dataset_name',
+          watchMode: true,
+        },
+      },
+    ],
+  };
+  ```
+  When you are on `development` mode and you make a change on your `Sanity` cms you won't need to rebuild your app again
+- Now we will add a `token` but this `token` should be `secret` so we don't want to commit to any version controller this so we will need to add some things before. First; on your root of the `gatsby` directory add a file called `.env`
+- Inside of this file add the following
+  ```bash
+  SANITY_TOKEN =
+  ```
+- Then go to https://manage.sanity.io/
+- Click the `settings` options
+- Click on `API`
+- Then click on the `ADD NEW TOKEN` button
+- On the modal add the name of the `token` on the input
+- The `Rights` should be just `read`
+- Click on the `ADD NEW TOKEN` button
+- Copy the `token` (This will show you the `token` just once so make sure to copy a temporally store somewhere)
+- Now get back to your editor and go to the `.env` file that you created
+- Paste your `token` after the equal sign of the `SANITY_TOKEN` environment variable
+- Then import `dotenv` on the `gatsby-config.js`
+  `import dotenv from 'dotenv';`
+- Now use the `dotenv` function
+  `dotenv.config({ path: '.env' });`
+
+  By default `Gatsby` will add to your surface any environment variable that starts with `GATSBY_` but it will not surface the other ones. In this case, we want that this secret will not surface and be on the browser so we will use `dotenv` to use this value
+
+- Then add the `token` to the `options` object in the `gatsby-config.js` file using the token that you add before in the environment variable
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-styled-components',
+      {
+        resolve: 'gatsby-source-sanity',
+        options: {
+          projectId: 'your_project_id',
+          dataset: 'your_dataset_name',
+          watchMode: true,
+          token: process.env.SANITY_TOKEN,
+        },
+      },
+    ],
+  };
+  ```
+- Finally, we need to deploy our `graphQL` API on `Sanity` because by default it has a [grok api](https://www.sanity.io/docs/groq) that needs to be enabled to actually work with `graphQL` and `Sanity`. Now on your terminal go to the `sanity` directory
+- Use the following command: `sanity graphql deploy your_dataset_name`
+- Write `y` to active the playground and hit enter (When it finish the process you will see a link to the playground)
+- Now on your terminal go to the `gatsby` directory and restart your local server
+- Go to the `graphQL` explore and you should see the `sanity` data
+
+#### Notes:
+
+- The plugins that we add to this section are previously installed. You can check the `package.json`
+- Another thing that we should add is the `CORS Origins` in the `settings` options if you are accessing from the browser; for now we don't need this when we are local because the browser will not be talking with `Sanity` actually this will happen on build time on the `node` server and `CORS` will not apply but on a later section we will add this
+
+#### Practice some queries on graphQL
+
+Now as you see on your `graphQL` playground's explorer you got a bunch of new options that you could use to grab some data from `Sanity` here are some examples:
+
+- First on the explorer click the `allSanityPizza`. This will make a `query` that bring all `pizzas`
+- Click on `nodes` (this will bring an individual `pizza`)
+- Now on the `nodes` options choose the `name` and `price`. You should end up with a `query` like this:
+  ```js
+  {
+    allSanityPizza {
+      nodes {
+        name
+        price
+    }
+  }
+  ```
+- Click on the `play` button
+- You should see an object like this with the `Sanity` data
+  ```js
+  {
+  "data": {
+    "allSanityPizza": {
+      "nodes": [
+        {
+          "name": "Master pizza",
+          "price": 1034,
+        },
+        {
+          "name": "Veggie Deligth",
+          "price": 2256,
+        }
+      ]
+    },
+  }
+  ```
+- You can continue adding properties like the `slug` so click on the `slug` option and click on `current` to have the actual `slug` string
+- You should end up with a `query` like this
+  ```js
+  {
+    allSanityPizza {
+      nodes {
+        name
+        price
+        slug {
+          current
+        }
+      }
+    }
+  }
+  ```
+- Click on the play button and you should see an object like this:
+  ```js
+  {
+  "data": {
+    "allSanityPizza": {
+      "nodes": [
+        {
+          "name": "Master pizza",
+          "price": 1034,
+          "slug": {
+            "current": "i-love-pizza"
+          },
+        {
+          "name": "Veggie Deligth",
+          "price": 2256,
+          "slug": {
+            "current": "veggie-deligth"
+          },
+        },
+      },
+    }
+  }
+  ```
+- One of the benefits of `graphQL` is that you can `query` as much data as you want so you can `query` all `pizza` but in the same `query` you can also `query` for the `person`. So on the `explorer` click on `allSanityPerson`
+- Then click on `nodes`
+- Choose the `name` option
+- You should see a `query` like this
+  ```js
+  {
+    allSanityPizza {
+      nodes {
+        name
+        id
+        price
+        slug {
+          current
+        }
+      }
+    }
+    allSanityPerson {
+      nodes {
+        name
+      }
+    }
+  }
+  ```
+- Click on the `play` button
+- You should see an object like this:
+  ```js
+  {
+    "data": {
+      "allSanityPizza": {
+        "nodes": [
+          {
+            "name": "Master pizza",
+            "price": 1034,
+            "slug": {
+              "current": "i-love-pizza"
+            },
+          },
+          {
+            "name": "Veggie Deligth",
+            "price": 2256,
+            "slug": {
+              "current": "veggie-deligth"
+            },
+          }
+        ]
+      },
+      "allSanityPerson": {
+        "nodes": [
+          {
+            "name": "Slick"
+          }
+        ]
+      }
+    },
+  }
+  ```
+- Also we can go for `nested` datatypes. As you remember each `pizza` have `toppings` and we can call then clicking on the `toppings` options of the `allSanityPizza`
+- Then click on the `name` option
+- You should end up with a `query` like this:
+  ```js
+  {
+    allSanityPizza {
+      nodes {
+        name
+        id
+        price
+        slug {
+          current
+        }
+        toppings {
+          name
+        }
+      }
+    }
+    allSanityPerson {
+      nodes {
+        name
+      }
+    }
+  }
+  ```
+- Click on the `play` button
+- You should end up with a `query` like this
+  ```js
+  {
+    "data": {
+      "allSanityPizza": {
+        "nodes": [
+          {
+            "name": "Master pizza",
+            "id": "-cdbc37fe-833f-5ab6-857a-9e60f98396fb",
+            "price": 1034,
+            "slug": {
+              "current": "i-love-pizza"
+            },
+            "toppings": [
+              {
+                "name": "Pepperoni"
+              },
+              {
+                "name": "Mushrooms"
+              },
+              {
+                "name": "Onions"
+              },
+              {
+                "name": "Bacon"
+              }
+            ]
+          },
+          {
+            "name": "Veggie Deligth",
+            "id": "-0bfa6678-2690-51df-b791-c4e2edd22241",
+            "price": 2256,
+            "slug": {
+              "current": "veggie-deligth"
+            },
+            "toppings": [
+              {
+                "name": "Mushrooms"
+              },
+              {
+                "name": "Onions"
+              }
+            ]
+          }
+        ]
+      },
+      "allSanityPerson": {
+        "nodes": [
+          {
+            "name": "Slick"
+          }
+        ]
+      }
+    },
+  }
+  ```
+- Now on the `allSanityPizza` click on the `id` option
+- Click on the `play` button
+- Copy one of the `pizza's` ids
+- Go to space where the `query` is written
+- Clean your `query` space
+- Add the following `query` pasting the `id` of the `pizza` that you just copy
+  ```js
+  {
+    sanityPizza(id: {eq: "your_pizza_id"}) {
+      name
+    }
+  }
+  ```
+  We sent to the `sanityPizza` a `stringQueryObject` with a property called `eq` that means `equal` so we are writing a `query` that grad the `pizza` with a specific `id`(Do not confuse with `_id` that is an internal database `id`)
+- Click on the `play` button and you should end with an object like this
+  ```js
+  {
+    "data": {
+      "sanityPizza": {
+        "name": "Veggie Deligth"
+      }
+    },
+  }
+  ```
+- Here is the same example with a `regex`
+  ```JS
+  {
+    sanityPizza(name: {regex: "/veggie/i"}) {
+      name
+      toppings {
+        name
+        vegetarian
+      }
+    }
+  }
+  ```
+- Click on the `play` button
+- You should end up with an object like this
+  ```js
+  {
+    "data": {
+      "sanityPizza": {
+        "name": "Veggie Deligth",
+        "toppings": [
+          {
+            "name": "Mushrooms",
+            "vegetarian": true
+          },
+          {
+            "name": "Onions",
+            "vegetarian": true
+          }
+        ]
+      }
+    },
+  }
+  ```
