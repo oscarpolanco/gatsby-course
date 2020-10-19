@@ -13,7 +13,7 @@ export default {
     {
       resolve: 'gatsby-source-sanity',
       options: {
-        projectId: '8tjpi4vb',
+        projectId: process.env.SANITY_PROJECT_ID,
         dataset: 'production',
         watchMode: true,
         token: process.env.SANITY_TOKEN,

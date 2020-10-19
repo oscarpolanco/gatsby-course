@@ -1687,3 +1687,199 @@ Now as you see on your `graphQL` playground's explorer you got a bunch of new op
     },
   }
   ```
+
+### Learning Gatsby queries
+
+Now that we have access to the data of `sanity` in `Gatsby` we need to learn how to use it on the parts of our website that we need.
+
+On `Gatsby` we have 2 types of `queries`; a `page query` and a `static query`.
+
+- `page query`: Is that `query` that can accept variables and can only be done on a `page`
+- `static query`: Is that `query` that can be anywhere you want and can not be dynamic so it can not accept variables
+
+To begin to work using `queries` on `Gatsby` we will be working on the `pizza` page that will `fetch` all `pizzas` or all `pizzas` depending on a `topping` so we will need to use a `query` that fetch all `pizzas` if we don't have any `topping` choose or filter the `pizzas` by `toppings`. Let begin with the process
+
+- First; go to the `pizza` page component on the `page` directory
+- Now import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- The way to specify a `page query` on `Gatsby` is exporting a `query` from the `page` and `Gatsby` is smart enough to see that there is a `query`; it gets the data past it to your `page component`. So add an export statement after the `Pizza page` component like this:
+  ```js
+  export const query = graphql``;
+  ```
+  The actual name of the variable is not important you only thing that matters is that you are exporting a `graphQL` query and will turn it into data. Remember that you need to use `backticks`
+- Now let begin to write the `page query`. Create a `query` object name `PizzaQuery`
+  ```js
+  export const query = graphql`
+    query PizzaQuery {}
+  `;
+  ```
+  The name is not required but we can use it
+- Then we need to begin with the `query`. For all `pizza` we will get the `names`; `id`; `slug` and `toppings`
+  ```js
+  export const query = graphql`
+    query PizzaQuery {
+      allSanityPizza {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          toppings {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+  ```
+  Is almost the same that we already saw on the `graphQL` playground so will be easier to go there make the `query` and paste it here
+- Now we want the `pizza` image on the `query`
+  ```js
+  export const query = graphql`
+    query PizzaQuery {
+      allSanityPizza {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          toppings {
+            id
+            name
+          }
+          image {
+            asset {
+              fluid(maxWidth: 400) {
+                ...GatsbySanityImageFluid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+  The `fluid` part will be covert on a later section but on the nested inside we use what is called `fragment` that is a collection of fields that we want so we can prevent to write the complete `query` because when you are writing a `graphQL` query you need to specify everything that you need but in our case, we need every field so we can stick it into a fragment. The `fragment` comes from the `Sanity` plugin that we use before. Another thing is when you add a `fragment` it will not work on the `graphQL` playground
+- Now you save your work and run your local server
+- On the browser open the inspector
+- Search for the `components` tap(we assume that you have the `react` extension on your browser)
+- Go to the `pizza` page
+- On the inspector search for the `pizza` page component
+- On the `props` you should see a `prop` call `data` with your `query`
+- Now that we see the `query` we want to rename the `allSanity query` for a much easier word like `pizzas` and we just do the following to achieve that
+  ````js
+  ```js
+  export const query = graphql`
+    query PizzaQuery {
+      pizza: allSanityPizza {...}
+    }
+  `
+  ````
+- Now is you check on your browser again you should see a `pizzas` property on the `data` prop
+
+#### Display the data on the page
+
+As you see we got the `data` that we need on the `pops` object so we just need to use it on our page.
+
+- On your editor; in the `pizza.js` file destructure the `props` object to recive the `data` prop
+  `export default function PizzasPage({ data }) {...}`
+- Now extract the `pizzas` from data
+  ```js
+  export default function PizzasPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    ...
+  }
+  ```
+  If you notice we don't add any loading state to wait for the data because all is pre-build so this means that before the page render all the data will be there. On build time; we build it the data will be there then we send it to the server
+- Now we will create another component to display the actual data. On the `components` folder create a new file call `PizzaList.js`
+- On this newly created file import `react`
+  `import React from 'react';`
+- Then import the `Link` component from `gatsby`
+  `import { Link } from 'gatsby';`
+- Now create a function call `PizzaLIst` and export that
+  `export default function PizzaList() {}`
+- Now we will reciving a `prop` call `pizzas`
+  `export default function PizzaList({ pizzas }) {}`
+- Before we loop over from the `pizzas` I like to create a component for the single `pizza` to matain it separate from the `grid`; so on before the `PizzaList` function create a component call `SinglePizza` that recive as a prop `pizza`
+  `function SinglePizza({ pizza }) {}`
+- Now on the return statement we add a `div` as container
+  ```js
+  function SinglePizza({ pizza }) {
+    return <div></div>;
+  }
+  ```
+- Now use the `Link` component to use the `/pizza/slug` to redirect the user
+  ```js
+  function SinglePizza({ pizza }) {
+    return (
+      <div>
+        <Link to={`/pizza/${pizza.slug.current}`}></Link>
+      </div>
+    );
+  }
+  ```
+  We will be creating the page related to a single `pizza` on another section
+- Then inside of the `Link` component add a `h2` tag with the following structure(follow this stucture to have the same styles)
+  ```js
+  function SinglePizza({ pizza }) {
+    return (
+      <div>
+        <Link to={`/pizza/${pizza.slug.current}`}>
+          <h2>
+            <span className="mark">{pizza.name}</span>
+          </h2>
+        </Link>
+      </div>
+    );
+  }
+  ```
+- Add a `p` tag bellow the `h2` tag to render the `toppings`. Since the `toppings` are an array of `toppings` we need to loop throw it. Since the `map` function returns an array we need to use the `join` function to have an string separate by comma and a space
+  ```js
+  function SinglePizza({ pizza }) {
+    return (
+      <div>
+        <Link to={`/pizza/${pizza.slug.current}`}>
+          <h2>
+            <span className="mark">{pizza.name}</span>
+          </h2>
+          <p>{pizza.toppings.map((topping) => topping.name).join(", ")}</p>
+        </Link>
+      </div>
+    );
+  }
+  ```
+- Now we loop over the `pizzas` object using `map` using the `SinglePizza` component that we did before and add the `pizza` id as a key of the component
+  ```js
+  export default function PizzaList({ pizzas }) {
+    return (
+      <div>
+      key={pizza.id}
+        {pizzas.map((pizza) => (
+          <SinglePizza key={pizza.id} pizza={pizza} />
+        )}
+      </div>
+    );
+  }
+  ```
+- Import `PizzaList` from `components`
+  `import PizzaList from '../components/PizzaList';`
+- Remove the example text from the return statement and use the `PizzaList` component sending `pizzas` as it prop
+  ```js
+  export default function PizzasPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    return (
+      <>
+        <PizzaList pizzas={pizzas} />
+      </>
+    );
+  }
+  ```
+- Run your local server
+- On the `pizzas` page on your browser you should see the information of the `pizzas` that you add on `Sanity`
+
+#### Notes:
+
+- Later we will modify the `query` to take variables

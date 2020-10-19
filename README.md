@@ -3,6 +3,7 @@
 ## Requiretments
 
 - [Nodejs](https://nodejs.org/en/)
+- [Sanity](https://www.sanity.io/) account
 
 ## Tools and modules on use in the application
 
@@ -10,6 +11,7 @@
 - [Gatsby](https://www.gatsbyjs.com/) for the `client` of the application
 - [Styled-components](https://styled-components.com/) for the `client` styles
 - [Sanity](https://www.sanity.io/) for the `backend` side of the application
+- [GraphQL](https://graphql.org/) to `query` the data
 
 ## Pages
 
@@ -22,9 +24,29 @@
 
 ## Step to run the example
 
+### Frontend side of the application
+
 - On your terminal go to the `gatsby` directory
+- Create a file called `.env`
+- Add the following information to the following `env` variables
+  ```bash
+  SANITY_TOKEN = your_sanity_token
+  SANITY_PROJECT_ID = 'your_sanity_project_id'
+  ```
 - Install all dependencies using: `npm install`
 - Run your local server using: `npm start`
+
+### Backend side of the application
+
 - On another tab of your terminal go to the `sanity` directory
 - Install all dependencies using: `npm install`
+- If it is the first time; follow the steps on the `Create your sanity project and deploy graphQL API` section bellow then back on here if not continue with the next step
 - Start your local server using: `npm start`
+
+#### Create your sanity project and deploy graphQL API
+
+- Now configure your project using: `sanity init --reconfigure`
+- Choose `create a new project` and put a name for it
+- Add your `dataset`(You can use the default `production` dataset)
+- Deploy the `graphQL` API on `Sanity` using:
+  `sanity graphql deploy name_of_your_dataset`
