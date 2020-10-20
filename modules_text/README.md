@@ -1883,3 +1883,82 @@ As you see we got the `data` that we need on the `pops` object so we just need t
 #### Notes:
 
 - Later we will modify the `query` to take variables
+
+## Module 6: Puttin' in work
+
+In this module, we will be addressing a couple of topics that will help us to begin to give form to our example website.
+
+### Gatsby images
+
+One of the topics that always comes when you are working on a website is `images` because they can be an issue on your website if you don't handle it but like we mentioned before here is were `Gatsby` comes to the rescue because it makes the progressive loading, different resizing and compression much easier.
+
+#### Some issues with images
+
+- Some times the `image` are too big like when your site receives an 8MG and you need to resize it
+- Sometimes they are not compressed so the size file could be right but it could be smaller because you can compress it with an algorithm; these algorithms can be `lossless` and `lossy` algorithms. The `lossless` compression will make the `image` the small as possible without giving any quality and the `lossy` compression make the `image` the small as possible without giving any quality.
+- Some times we receive `images` with different `with/height` and you will need to resize then to be on the sizes that you want for your website
+- You could have poor loading because when you try to load the `image` on the page and you have a slow internet connection will take more time to show the `image` to the user
+- You can have the incorrect format; some browser could need a specific version of an `image` so you will need more than one `image` so the browser load the correct one
+
+#### How Gatsby can help
+
+It will add all the things that we need to solve the issues that we mention in the title of the preview and you don't need to worry about it. For example:
+
+- It will handle the `radios` for you
+- It will give us a `data image` that will be shown in the moments that the actual `image` is loading
+- Add a `picture` tag with a couple of `sources` tag so the browser can choose the `image` version that it wants depending on the size of the browser
+
+All these advantages are handle under the hook by `Gatsby` but first, you need to be aware that you can't upload your `image` directly to the site so you will need a service or a computer that manually process all those versions of the `images`.
+
+With `gatsby` we have 2 ways of doing this process:
+
+- You can `source` your `images`; it's you have your `images` in a directory of your project you can `source` then and pipe to `gatsby-plugin-sharp` as you see [here](https://www.gatsbyjs.com/plugins/gatsby-image/) on the official documentation. `Sharp` is something that will run on your computer or on your build process to resize and generate all `images` for you. The downside of this approach is that `image` processing is very expensive so your build process will take a lot of time.
+
+- The other way is to `source` your `images` via a service. On those services, you can directly upload your `images` or you can feed then your `image` to generate all the `images` on-demand as the client requested
+
+Here is a couple of services that can help us with images:
+
+- [Sanity Image Pipeline](https://www.sanity.io/docs/presenting-images)(This is our choose service for this example)
+- [Cloudinary](https://cloudinary.com/)
+- [Imgix](https://www.imgix.com/)
+
+#### Render an image with Gatsby
+
+- First; on your editor go to the `PizzaList` component on the `gatsby/components` directory
+- Import `Img` from `gatsby-image`
+  `import Img from 'gatsby-image';`
+- Bellow the `pizza toppings` use the `Img` component like this
+  `<Img fluid={pizza.image.asset.fluid} alt={pizza.name} />`
+
+  Here we use the `Img` component sending the `fluid` prop and send the `fluid` object that we have available on each `pizza` and for accessibility, we add an `alt` text using the `pizza` name
+
+- Now run your local server and go to the `pizzas` page
+- You should see that each pizza have it `images`
+
+Now if you want a different size of the `image` that you receive; you only need to change the value of the `fluid` on the `query` that we did on the `pizza` component also you can get a `fix` value of the image like this:
+
+```js
+export const query = graphql`
+  query PizzaQuery {
+    pizzas: allSanityPizza {
+      ...
+      image {
+        asset {
+          fixed(width: 200, height: 200) {
+            ...GatsbySanityImageFluid
+          }
+          fluid(maxWidth: 400) {
+            ...GatsbySanityImageFluid
+          }
+        }
+      }
+    }
+  }
+}
+`;
+```
+
+Then on the `PizzaList` component on the `Img` component change the `fluid` prop for a `fixed` prop
+`<Img fixed={pizza.image.asset.fluid} alt={pizza.name} />`
+
+You should see the change on your browser if you still have the local server running. The difference is that `fixed image` won't be responsive like the `fluid` one. We are going to choose the `fluid` version so delete all the `fixed image` content.
