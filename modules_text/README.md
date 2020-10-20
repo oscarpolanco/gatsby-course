@@ -1962,3 +1962,19 @@ Then on the `PizzaList` component on the `Img` component change the `fluid` prop
 `<Img fixed={pizza.image.asset.fluid} alt={pizza.name} />`
 
 You should see the change on your browser if you still have the local server running. The difference is that `fixed image` won't be responsive like the `fluid` one. We are going to choose the `fluid` version so delete all the `fixed image` content.
+
+### Importing data to sanity
+
+Instead of writing all the `pizzas`,`toppings`, etc.. on the `Sanity` dashboard; we will import all the data to `Sanity` using a `gz` file that we put on the `sample-data` directory.
+
+- On your terminal go to the `sanity` directory
+- Type the following command:
+  `sanity dataset import path_of_your_gz_file name_of_your_dataset`
+
+  If you add `--replace` it will override all data of your `dataset` with the importing one
+
+- Now run your local `sanity` server using: `npm start`
+- You should see that your dashboard have a lot of more data than before
+- Now on another tab of your terminal run your `gatsby` local server using: `npm start`
+- On your browser go to the `pizzas` page
+- You should see a lot more `pizzas` than before
