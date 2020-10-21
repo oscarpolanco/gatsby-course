@@ -1836,7 +1836,7 @@ As you see we got the `data` that we need on the `pops` object so we just need t
     );
   }
   ```
-- Add a `p` tag bellow the `h2` tag to render the `toppings`. Since the `toppings` are an array of `toppings` we need to loop throw it. Since the `map` function returns an array we need to use the `join` function to have an string separate by comma and a space
+- Add a `p` tag bellow the `Link` component add the `toppings`. Since the `toppings` are an array of `toppings` we need to loop throw it. Since the `map` function returns an array we need to use the `join` function to have an string separate by comma and a space
   ```js
   function SinglePizza({ pizza }) {
     return (
@@ -1845,8 +1845,8 @@ As you see we got the `data` that we need on the `pops` object so we just need t
           <h2>
             <span className="mark">{pizza.name}</span>
           </h2>
-          <p>{pizza.toppings.map((topping) => topping.name).join(", ")}</p>
         </Link>
+        <p>{pizza.toppings.map((topping) => topping.name).join(", ")}</p>
       </div>
     );
   }
@@ -1978,3 +1978,80 @@ Instead of writing all the `pizzas`,`toppings`, etc.. on the `Sanity` dashboard;
 - Now on another tab of your terminal run your `gatsby` local server using: `npm start`
 - On your browser go to the `pizzas` page
 - You should see a lot more `pizzas` than before
+
+### Styling our pizza grid with CSS subgrid
+
+Now we are going to work with `CSS` a little bit on the `pizza` page.
+
+- On your editor go to the `PizzaList` component in the `gatsby/components` directory
+- Then import `styled` from `styled-components`
+- Before the `SinglePizza` component; create a constant call `PizzaGridStyles` as a `div` using the `styled` object
+  ```js
+  const PizzaGridStyles = styled.div``
+  ```
+- Then replace the `div` on the `return` statement of the `PizzaList` component to `PizzaGridStyles`
+  ```js
+  export default function PizzaList({ pizzas }) {
+    return (
+      <PizzaGridStyles>
+       ...
+      </PizzaGridStyles>
+    );
+  }
+  ```
+- Now on the `PizzaGridStyles` add the following style:
+  ```js
+  const PizzaGridStyles = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 4rem;
+    grid-auto-rows: auto auto 500px;
+  `;
+  ```
+  - `display: grid;`: We gonna continue using the [css grd layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
+  - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));`: Here we define the `columns` that we will have with the [grid-template-columns](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns). Normally you will need to put a size of each column that you want like this:
+  `grid-template-columns: 1fr 1fr 1fr 1fr;`
+
+  We don't want to repeat the value all those times so we use the [repeat](https://developer.mozilla.org/en-US/docs/Web/CSS/repeat) function that will help us to avoid that repetition telling the value of the repetition and the size that will be repeated. In this case, we tell an `auto-fill`(If the grid container have a define or max size; this will get to you a positive integer that doesn't cause an overflow) value then we tell the variable part of the `repeat` function using the `minmax` function that receives a min and max value where the min will be `300px` and the max will be the entire width of the `grid`
+  - `gap: 4rem;`: Define the space between columns
+  - `grid-auto-rows: auto auto 500px;`: Here we use the [grid-auto-rows](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows) that specify the size of the implicit created `grid rows`. At this time we set the `title` of the item to have a value depending on its content and the `toppings` in the next line will have this auto-generated value but the `images` will be `500px` height. But this property will not do anything just yet because we are putting it on the container of all items instead and the actual items are not a direct child of the container
+- Now create a new constant call `PizzaStyles`
+  ```js
+  const PizzaStyles = styled.div``
+  ```
+- Then on the return statement of the `SinglePizza` component replace the `div` container to `PizzaStyles`
+  ```js
+  function SinglePizza({ pizza }) {
+    return (
+      <PizzaStyles>
+        ...
+      </PizzaStyles>
+    );
+  }
+  ```
+- Now add the following style on the `PizzaStyles`
+  ```js
+  const PizzaStyles = styled.div`
+    display: grid;
+    /* Take your row sizing not from your pizzaStyles div, but from the PizzaGridStyles grid */
+    @supports not (grid-template-rows: subgrid) {
+      --rows: auto auto 1fr;
+    }
+    grid-template-rows: var(--rows, subgrid);
+    grid-row: span 3;
+    grid-gap: 1rem;
+    h2,
+    p {
+      margin: 0;
+    }
+  `;
+  ```
+  - `display: grid;`: We gonna continue using the [css grd layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
+  - `@supports not (grid-template-rows: subgrid)`: Ask the browser to run the `CSS` rule and if it doesn't work run the rule on that is between the square brackets
+  - `--rows: auto auto 1fr;`: Define the `row` variable
+  - `grid-template-rows: var(--rows, subgrid);`: We use the [grid-template-rows](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows) to define the actual size of the rows but we don't actually send a value we use the [var](https://developer.mozilla.org/en-US/docs/Web/CSS/var) function that set the value to the variable `rows` it if exists; if not use the `subgrid` property. The [subgrid](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout/Subgrid) value that will give the value set by `PizzaGridStyles` in the `grid-auto-rows` property(The `subgrid` value for the moment only work on `firefox` that is why is only a fallback value of the property)
+  - `grid-row: span 3;`: We use the [grid-row](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row) property to tell the actual size of the row and expand 3 rows
+  - `grid-gap: 1rem;`: Add a `gap` between rows
+  - Finally, eliminate the `margin` of the `p` and `h2` tag
+- Now run your local server and go to the `pizzas` page
+- You should see the `pizza` items aling and will be responsive
