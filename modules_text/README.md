@@ -1974,7 +1974,7 @@ Instead of writing all the `pizzas`,`toppings`, etc.. on the `Sanity` dashboard;
   If you add `--replace` it will override all data of your `dataset` with the importing one
 
 - Now run your local `sanity` server using: `npm start`
-- You should see that your dashboard have a lot of more data than before
+- You should see that your dashboard have a lot more data than before
 - Now on another tab of your terminal run your `gatsby` local server using: `npm start`
 - On your browser go to the `pizzas` page
 - You should see a lot more `pizzas` than before
@@ -1987,19 +1987,16 @@ Now we are going to work with `CSS` a little bit on the `pizza` page.
 - Then import `styled` from `styled-components`
 - Before the `SinglePizza` component; create a constant call `PizzaGridStyles` as a `div` using the `styled` object
   ```js
-  const PizzaGridStyles = styled.div``
+  const PizzaGridStyles = styled.div``;
   ```
 - Then replace the `div` on the `return` statement of the `PizzaList` component to `PizzaGridStyles`
   ```js
   export default function PizzaList({ pizzas }) {
-    return (
-      <PizzaGridStyles>
-       ...
-      </PizzaGridStyles>
-    );
+    return <PizzaGridStyles>...</PizzaGridStyles>;
   }
   ```
 - Now on the `PizzaGridStyles` add the following style:
+
   ```js
   const PizzaGridStyles = styled.div`
     display: grid;
@@ -2008,25 +2005,24 @@ Now we are going to work with `CSS` a little bit on the `pizza` page.
     grid-auto-rows: auto auto 500px;
   `;
   ```
+
   - `display: grid;`: We gonna continue using the [css grd layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
   - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));`: Here we define the `columns` that we will have with the [grid-template-columns](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns). Normally you will need to put a size of each column that you want like this:
-  `grid-template-columns: 1fr 1fr 1fr 1fr;`
+    `grid-template-columns: 1fr 1fr 1fr 1fr;`
 
   We don't want to repeat the value all those times so we use the [repeat](https://developer.mozilla.org/en-US/docs/Web/CSS/repeat) function that will help us to avoid that repetition telling the value of the repetition and the size that will be repeated. In this case, we tell an `auto-fill`(If the grid container have a define or max size; this will get to you a positive integer that doesn't cause an overflow) value then we tell the variable part of the `repeat` function using the `minmax` function that receives a min and max value where the min will be `300px` and the max will be the entire width of the `grid`
+
   - `gap: 4rem;`: Define the space between columns
   - `grid-auto-rows: auto auto 500px;`: Here we use the [grid-auto-rows](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows) that specify the size of the implicit created `grid rows`. At this time we set the `title` of the item to have a value depending on its content and the `toppings` in the next line will have this auto-generated value but the `images` will be `500px` height. But this property will not do anything just yet because we are putting it on the container of all items instead and the actual items are not a direct child of the container
+
 - Now create a new constant call `PizzaStyles`
   ```js
-  const PizzaStyles = styled.div``
+  const PizzaStyles = styled.div``;
   ```
 - Then on the return statement of the `SinglePizza` component replace the `div` container to `PizzaStyles`
   ```js
   function SinglePizza({ pizza }) {
-    return (
-      <PizzaStyles>
-        ...
-      </PizzaStyles>
-    );
+    return <PizzaStyles>...</PizzaStyles>;
   }
   ```
 - Now add the following style on the `PizzaStyles`
@@ -2054,4 +2050,428 @@ Now we are going to work with `CSS` a little bit on the `pizza` page.
   - `grid-gap: 1rem;`: Add a `gap` between rows
   - Finally, eliminate the `margin` of the `p` and `h2` tag
 - Now run your local server and go to the `pizzas` page
-- You should see the `pizza` items aling and will be responsive
+- You should see the `pizza` items align and will be responsive
+
+### Statics queries and building the Toppings filter
+
+At this stage of the example, we want to create a `topping` filter that has all the `toppings` names and the count of the `pizzas` that have this `topping` and each `topping` will be a clickable link that will redirect you to a `topping` specific page.
+
+- First, create a new file on the `gatsby/component` directory call `ToppingFilter.js`
+- Import `React` from `react`: `import React from 'react';`
+- Export a function call `ToppingFilter` with the following content:
+  ```js
+  export default function ToppingFilter() {
+    return <p>Toppings</p>;
+  }
+  ```
+- Go to the `pizza` page component
+- Import `ToppingFilter`: `import ToppingFilter from '../components/ToppinsFilter';`
+- Add the `ToppingFilter` component before the `PizzaList` component
+  ```js
+  export default function PizzasPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    return (
+      <>
+        <ToppingFilter />
+        <PizzaList pizzas={pizzas} />
+      </>
+    );
+  }
+  ```
+- Run your local server using: `npm start`
+- Go to the `pizzas` page
+- You should see the word `Toppings` at the top of all `pizzas`
+- Now we need to add a `static` query. If you remember we did a `query` on the `pizza` page component and that is a `page` query that is a `dynamic` query; this means that you can send variables that affect the result of the query but if you want to do a query anywhere else that is not a page you will need to use a `static` query that is a query that doesn't receive variables and your run it wherever you want using a `react` hook. Now on the `ToppingFilter` file import the `useStaticQuery` from `gatsby`
+- Then inside of the `ToppingFilter` function use the `useStaticQuery` storing the resolve on a constant call `toppings` result of a destructuring of the value of the query that we are going to add
+  ```js
+  export default function ToppingFilter() {
+    const { toppings } = useStaticQuery();
+  }
+  ```
+- Import `graphql` from `gatsby`: `import { graphql, useStaticQuery } from 'gatsby';`
+- Use `graphql` on the `useStaticQuery` hook
+  ```js
+  export default function ToppingFilter() {
+    const { toppings ] = useStaticQuery(graphql``);
+  }
+  ```
+- Now inside of the `graphql` backtick add a query that bring all `toppings` with their `name`, `id` and the `vegetarian` value and call that query `toppings` instead of `allSanityTopping`
+  ```js
+  export default function ToppingFilter() {
+    const { toppings } = useStaticQuery(graphql`
+      query {
+        toppings: allSanityTopping {
+          nodes {
+            name
+            id
+            vegetarian
+          }
+        }
+      }
+    `);
+  }
+  ```
+- In the same query bring all `pizzas` and destructure the value to have a constant call `pizzas`
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`
+      query {
+        toppings: allSanityTopping {
+          nodes {
+            name
+            id
+            vegetarian
+          }
+        }
+        pizzas: allSanityPizza {
+          nodes {
+            toppings {
+              name
+              id
+            }
+          }
+        }
+      }
+    `);
+  }
+  ```
+- Now we need to count how many `pizzas` have each `topping`. Before the `ToppingFilter` function create a function call `countPizzasInToppings` that recive the `pizzas` as a parameter
+  `function countPizzasInToppings(pizzas) {}`
+- After the query create a constant call `toppingsWithCounts` and use the `countPizzasInToppings` function as it value sending the result of the `pizzas` (Need to send `pizzas.nodes`)
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`...`);
+
+    const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
+  }
+  ```
+- Then on the `countPizzasInToppings` return a `map` of each `pizza topping`
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas.map((pizza) => pizza.toppings);
+  }
+  ```
+- Since a `pizza` can have more than one `topping` the `map` will return to us an `array` of `arrays` but we just want just a big `array` so we will use the [flat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat) function that will help us to exatcly that
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas.map((pizza) => pizza.toppings).flat();
+  }
+  ```
+- Now we need to count how many times each `topping` repeat and for this we are going to use a `reduce` function. A `reduce` function recive 2 arguments a function and a initial value for a `acumulator`
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {}, {});
+  }
+  ```
+  The `acc` parameter is short for `accumulator` that is the value that we are going to return in each iteration and on each iteration will have the same value that you return on the previews iteration except for the first time that will have the value that you send as a second parameter to the `reduce` function The `accumulator` will have the following structure
+  ```js
+  {
+    id: topping.id,
+    name: topping.name,
+    count: 0,
+  }
+  ```
+- Now create a constant call `existingTopping` that will be equal to `acc[topping.id]`
+
+```js
+function countPizzasInToppings(pizzas) {
+  return pizzas
+    .map((pizza) => pizza.toppings)
+    .flat()
+    .reduce((acc, topping) => {
+      const existingTopping = acc[topping.id];
+    }, {});
+}
+```
+
+This will add the value of a existing topping in the `acumulator` and if it doesn't exist will be `undefined`
+
+- Now create a condition that ask if the `acc` have a value and add one to the `count` property of the `acc` if it have a value
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {
+        const existingTopping = acc[topping.id];
+        if (existingTopping) {
+          existingTopping.count += 1;
+        }
+      }, {});
+  }
+  ```
+  This will sum one to the `count` property because we match a existing `topping` on the accumulator
+- Now create an `else` statement for the other cases where you create the structure of the `topping` inside of the `acc`
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {
+        const existingTopping = acc[topping.id];
+        if (existingTopping) {
+          existingTopping.count += 1;
+        } else {
+          acc[topping.id] = {
+            id: topping.id,
+            name: topping.name,
+            count: 1,
+          };
+        }
+      }, {});
+  }
+  ```
+- Now return the `acc`
+  ```js
+  function countPizzasInToppings(pizzas) {
+    return pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {
+        const existingTopping = acc[topping.id];
+        if (existingTopping) {
+          existingTopping.count += 1;
+        } else {
+          acc[topping.id] = {
+            id: topping.id,
+            name: topping.name,
+            count: 1,
+          };
+        }
+        return acc;
+      }, {});
+  }
+  ```
+- Then we want to `sort` the `toppings` from the `topping` that have more `pizzas` to the `topping` that have less so instead of return the `pizzas` we are going to create a constant call `count`
+  ```js
+  function countPizzasInToppings(pizzas) {
+    const counts = pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {
+        const existingTopping = acc[topping.id];
+        if (existingTopping) {
+          existingTopping.count += 1;
+        } else {
+          acc[topping.id] = {
+            id: topping.id,
+            name: topping.name,
+            count: 1,
+          };
+        }
+
+        return acc;
+      }, {});
+  }
+  ```
+- Bellow the `counts` constant create another constant call `sortedToppings` and make it value an `array` of values to use the `sort` function
+
+  ```js
+  function countPizzasInToppings(pizzas) {
+    const counts = pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {...}, {});
+
+    const sortedToppings = Object.values(counts).sort(
+      (a, b) => b.count - a.count
+    );
+  }
+  ```
+
+- Return the `sortedToppings`
+
+  ```js
+  function countPizzasInToppings(pizzas) {
+    const counts = pizzas
+      .map((pizza) => pizza.toppings)
+      .flat()
+      .reduce((acc, topping) => {...}, {});
+
+    const sortedToppings = Object.values(counts).sort(
+      (a, b) => b.count - a.count
+    );
+  }
+
+  return sortedToppings;
+  ```
+
+- Now add the following block to the `return` statement
+
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`
+    query {...}
+  `);
+
+    const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
+
+    return (
+      <>
+        {toppingsWithCounts.map((topping) => (
+          <Link to={`/topping/${topping.name}`} key={topping.id}>
+            <span className="name">{topping.name}</span>
+            <span className="count">{topping.count}</span>
+          </Link>
+        ))}
+      </>
+    );
+  }
+  ```
+
+  It will loop over the `toppingsWithCounts` then for each `topping` will have a `link` that encloses the `name` and the `pizza count`. We use the `pizza` name on the URL of the individual `topping` instead of the `slug` but for the moment this URL will not work; in another section, we will create the `single topping` page. Make sure to use the same `classeName` as the example
+
+- Import `styled` from from `styled-components`
+  `import styled from 'styled-components';`
+- Before the `countPizzasInToppings` function create a constant call `ToppingsStyles` and use a `div` as it value
+
+```js
+const ToppingsStyles = styled.div``;
+```
+
+- Add the `ToppingsStyles` on the return statement
+
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`
+    query {...}
+  `);
+
+    const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
+
+    return (
+      <>
+        {toppingsWithCounts.map((topping) => (
+          <Link to={`/topping/${topping.name}`} key={topping.id}>
+            <span className="name">{topping.name}</span>
+            <span className="count">{topping.count}</span>
+          </Link>
+        ))}
+      </>
+    );
+  }
+  ```
+
+  It will loop over the `toppingsWithCounts` then for each `topping` will have a `link` that encloses the `name` and the `pizza count`. We use the `pizza` name on the URL of the individual `topping` instead of the `slug` but for the moment this URL will not work; in another section, we will create the `single topping` page. Make sure to use the same `classeName` as the example
+
+- Import `styled` from from `styled-components`
+  `import styled from 'styled-components';`
+- Before the `countPizzasInToppings` function create a constant call `ToppingsStyles` and use a `div` as it value
+
+```js
+const ToppingsStyles = styled.div``;
+```
+
+- Add the `ToppingsStyles` on the return statement
+
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`
+    query {...}
+  `);
+
+    const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
+
+    return (
+      <>
+        {toppingsWithCounts.map((topping) => (
+          <Link to={`/topping/${topping.name}`} key={topping.id}>
+            <span className="name">{topping.name}</span>
+            <span className="count">{topping.count}</span>
+          </Link>
+        ))}
+      </>
+    );
+  }
+  ```
+
+  It will loop over the `toppingsWithCounts` then for each `topping` will have a `link` that encloses the `name` and the `pizza count`. We use the `pizza` name on the URL of the individual `topping` instead of the `slug` but for the moment this URL will not work; in another section, we will create the `single topping` page. Make sure to use the same `classeName` as the example
+
+- Import `styled` from from `styled-components`
+  `import styled from 'styled-components';`
+- Before the `countPizzasInToppings` function create a constant call `ToppingsStyles` and use a `div` as it value
+
+```js
+const ToppingsStyles = styled.div``;
+```
+
+- Add the `ToppingsStyles` on the return statement
+
+  ```js
+  export default function ToppingFilter() {
+    const { toppings, pizzas } = useStaticQuery(graphql`
+    query {...}
+  `);
+
+    const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
+
+    return (
+      <ToppingsStyles>
+        {toppingsWithCounts.map((topping) => (
+          <Link to={`/topping/${topping.name}`} key={topping.id}>
+            <span className="name">{topping.name}</span>
+            <span className="count">{topping.count}</span>
+          </Link>
+        ))}
+      </ToppingsStyles>
+    );
+  }
+  ```
+
+- Now add the following:
+  ```js
+  const ToppingsStyles = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 4rem;
+  `;
+  ```
+  We are going to use (flex-box)[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox] in this case instead of `grid`. To `wrap` the element on the with of the container it use [flex-wrap](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap) then we add a `gap` between elements and a little space on the button to separate each line
+- Then add the following style for the links
+  ```js
+  const ToppingsStyles = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 4rem;
+    a {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-gap: 0 1rem;
+      align-items: center;
+      padding: 5px;
+      background: var(--grey);
+      border-radius: 2px;
+    }
+  `;
+  ```
+  So inside of the `anchor`, we need to use `grid` because we need elements side by side. Then we create the columns where the first `column` will `auto` adjust to the with the size of the `topping` name and the `pizza` count will adjust with the space that left on the `anchor`. We need some space at the side of the elements and not on the bottom or top. We use a `padding` for the elements surrounding and background to the `anchor`. From `flex` we align the element to the `center` thing that will be helpful when the size of the `fonts` get smaller and a `border-radius`
+- Now to the `count` class add the following
+  ```js
+  const ToppingsStyles = styled.div`
+    ...
+    a {...}
+    .count {
+      background: white;
+      padding: 2px 5px;
+    }
+  `;
+  ```
+  - `background: white;`: Add a `background` to the `pizza` count number
+  - `padding: 2px 5px;`: Add some spaces on the surrounding of the number inside of the `count` container. This is why we add previously the `align-items` so even having these spaces the elements will be aligned to the center
+- Finally add some style to the `active` state of the `anchor`
+  ```js
+  const ToppingsStyles = styled.div`
+    ...
+    a {...}
+    .count {...}
+    .active {
+      background: var(--yellow);
+    }
+  `;
+  ```
+  We just add a `yellow` background when an `anchor` is on the `active` state

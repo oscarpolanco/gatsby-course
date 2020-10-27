@@ -41,6 +41,7 @@
 - On another tab of your terminal go to the `sanity` directory
 - Install all dependencies using: `npm install`
 - If it is the first time; follow the steps on the `Create your sanity project and deploy graphQL API` section bellow then back on here if not continue with the next step
+- If you need example data for `sanity` follow the steps on the `Import sample date to sanity` section bellow; you can skip this step if you want
 - Start your local server using: `npm start`
 
 #### Create your sanity project and deploy graphQL API
@@ -50,3 +51,8 @@
 - Add your `dataset`(You can use the default `production` dataset)
 - Deploy the `graphQL` API on `Sanity` using:
   `sanity graphql deploy name_of_your_dataset`
+
+#### Import sample date to sanity
+
+- On your terminal use the following command on the `sanity` directory
+  `sanity dataset import ./sample-data/all-sample-data.gz name_of_your_dataset`
