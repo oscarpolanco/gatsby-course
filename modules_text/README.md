@@ -2138,6 +2138,7 @@ At this stage of the example, we want to create a `topping` filter that has all 
 - Now we need to count how many `pizzas` have each `topping`. Before the `ToppingFilter` function create a function call `countPizzasInToppings` that recive the `pizzas` as a parameter
   `function countPizzasInToppings(pizzas) {}`
 - After the query create a constant call `toppingsWithCounts` and use the `countPizzasInToppings` function as it value sending the result of the `pizzas` (Need to send `pizzas.nodes`)
+
   ```js
   export default function ToppingFilter() {
     const { toppings, pizzas } = useStaticQuery(graphql`...`);
@@ -2145,6 +2146,7 @@ At this stage of the example, we want to create a `topping` filter that has all 
     const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
   }
   ```
+
 - Then on the `countPizzasInToppings` return a `map` of each `pizza topping`
   ```js
   function countPizzasInToppings(pizzas) {
@@ -2246,6 +2248,7 @@ This will add the value of a existing topping in the `acumulator` and if it does
   }
   ```
 - Then we want to `sort` the `toppings` from the `topping` that have more `pizzas` to the `topping` that have less so instead of return the `pizzas` we are going to create a constant call `count`
+
   ```js
   function countPizzasInToppings(pizzas) {
     const counts = pizzas
@@ -2267,6 +2270,7 @@ This will add the value of a existing topping in the `acumulator` and if it does
       }, {});
   }
   ```
+
 - Bellow the `counts` constant create another constant call `sortedToppings` and make it value an `array` of values to use the `sort` function
 
   ```js
@@ -2475,3 +2479,211 @@ const ToppingsStyles = styled.div``;
   `;
   ```
   We just add a `yellow` background when an `anchor` is on the `active` state
+
+## Module 7: Making Gatsby Dynamic
+
+In this module, we will be working with the dynamic parts of the site such as the single pizza and toppings pages that will need a dynamic page generation so we don't need to create a file for every single page that we have.
+
+### Dynamically creating pages with gatsby-node
+
+We will be working on the `pizzas` page and as you may notice on each title you have a link that goes to an URL that at this moment doesn't work. These URLs are what we call a single page that is a page that will contain the information of a single item in this case one `pizza`.
+
+To do this we will be using another `gatsby` specific file call [gatsby-node](https://www.gatsbyjs.com/docs/node-apis/); like the other `gatsby-` files we hook to a certain moment of the build cycle to do some things like dynamically create pages. We will be using the `createPages` extension point(can be called a hook) that is called after the initial sourcing of data(After all our `sanity` data is pull to our `graphQL` API) so you can `query` data to create pages.
+
+- First; on the root of the `gatsby` directory create a file called `gatsby-node.js`
+- Now on the newly created file export a function call `createPages`(`gatsby` specific function) that will be an `async` function
+  `export async function createPages() {}`
+- Now add a `console.log` with a message inside of the `createPages` function
+- Go to your terminal a start you local server using: `npm start`
+- You should see the message that you add on the `createPages` function on your local server logs
+- Now delete the `console.log`
+- Add `params` as a param of the `createPages` function
+  `export async function createPages(params) {}`
+
+  `Gatsby` will send to you a set of params by default that are `graphql` and `actions` inside of `params`
+
+  - `graphql`: Help us to `query` data
+  - `actions`: Help us to create `pages`
+
+- Now at the top of the file import `path` from `path`
+  `import path from 'path';`
+- Now before the `createPages` function; create a function call `turnPizzasIntoPages` that will also be an `async` function
+  `async function turnPizzasIntoPages() {}`
+
+  Since we are going to create dynamically `pizzas`, `toppings` and `slidemasters` pages we are going to separate in functions each of then so will be easy to see and debug if is an issue
+
+- The `turnPizzasIntoPages` will recive `params` but we will destructuring to `graphql` and `actions`
+  `async function turnPizzasIntoPages({ graphql, actions }) {}`
+- Now that we have a function for the `pizzas` we need to create a `template` that we will render all the `pizza` information. On the `gatsby/templates` directory create a file call `Pizzas.js`(Since this is a `template` and can be used multiple times we put the uppercase on the name). You can store this file in the `components` directory but it will be easier to search the `templates` if we got then in it own directory
+- Inside of the newly created file import `React`
+  `import React from 'react';`
+- Then export a function call `SinglePizzaPage` with some content
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+  ```
+- Now go back to the `gatsby-node` file and inside of the `turnPizzasIntoPages` function create a constant call `pizzaTemplate` that will have the `template` that we just created. To resolve the `template` file we need to use a `node` module call `path` that we already import before
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+  }
+  ```
+  The `path` module comes directly from `node` no need to install any extra module
+- Then on the `createPages` function use the `turnPizzasIntoPages` function sending `params` to it(remember that `turnPizzasIntoPages` is an `async` function)
+  ```js
+  export async function createPages(params) {
+    await turnPizzasIntoPages(params);
+  }
+  ```
+  The `turnPizzasIntoPages` will `query` data and create the `pages` and that will take a couple os seconds that is why is an `async` function.
+- Inside of the `turnPizzasIntoPages` function add the following `graphQL` query
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`
+      query {
+        pizzas: allSanityPizza {
+          nodes {
+            name
+            slug {
+              current
+            }
+          }
+        }
+      }
+    `);
+  }
+  ```
+  Since we are on the `node` API we need to put `await` before the `graphql` function; then we add the `query` to get all `pizzas`
+- Now we need to loop on every `pizza` using the `forEach` function to create the page
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {});
+  }
+  ```
+
+- Then use `createPage` function of the `actions` param
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage();
+    });
+  }
+  ```
+
+- Inside of the `createPage` function add the following configuration object
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage({
+        path: `pizza/${pizza.slug.current}`,
+        component: pizzaTemplate,
+      });
+    });
+  }
+  ```
+
+  - `path`: The URL of the new page(This is what we defined on the links)
+  - `component`: This will be the component that will be called when you got a URL match
+
+- Restart your local server(Every time you make an update in the `gatsby-node` file; you will need to restart your server)
+- Go to the `pizzas` page on your browser
+- Click on one of the `pizza` titles
+- You should see the message that you put on the `Pizza` template
+- Now we are going to pass data to the template from the `gatsby-node` file and for this we use the `context` property
+  Inside of the `createPage` function add the following configuration object
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage({
+        path: `pizza/${pizza.slug.current}`,
+        component: pizzaTemplate,
+        context: {
+          slug: pizza.slug.current,
+        },
+      });
+    });
+  }
+  ```
+
+- Restart your local server
+- Go to one of the single `pizza` pages
+- Open the browser inspector
+- Go to the `components` tap
+- Search for the `SinglePizzaPage` component and click on it
+- On the `props` side you will see a `pageContext` prop with the information that you put on the `context` property before(The is a `pathContext` also but this is deprecated)
+- Now on the `Pizza.js` template import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Add a regular a `graphQL` query that use `sanityPizza` instead of all `allSanityPizza` that bring the `name`, `id`, `image` and `toppings` from a `pizza`
+
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+
+  export const query = graphql`
+    query {
+      pizza: sanityPizza {
+        name
+        id
+        image {
+          asset {
+            fluid(maxWidth: 800) {
+              ...GatsbySanityImageFluid
+            }
+          }
+        }
+        toppings {
+          name
+          id
+          vegetarian
+        }
+      }
+    }
+  `;
+  ```
+
+  But actually, this won't work because we need to specify the `pizza` that we need the information and we have the `slug` available to help us to make the `query` dynamic
+
+- Add the following on the `query`
+
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+
+  export const query = graphql`
+    query($slug: String!) {
+      pizza: sanityPizza(slug: { current: { eq: $slug } }) {...}
+  `;
+  ```
+
+  - `($slug: String!)`: The `query` will expect that a `slug` will be pass; the `slug` will be a `string` and it will be `required`(The `!` at the en make it `required`)
+  - `(slug: { current: { eq: $slug } })`: We tell the `query` that we want a `single pizza` that inside of the `slug` property have an object with a `current` property that will be `equal` to the `slug` that we pass
+
+- Now go to your browser to one of the `single pizza` pages
+- Open the browser inspector
+- Go to the `component` tab
+- Search the `SinglePizza` component
+- You should see on the `props` the resolve of the `pizza` query
+
+#### Notes:
+
+- We can have the `pizza` query of the `Pizza` template together with the `gatsby-node` template and pass it via `context` but we intend to maintain it separate to be easier to see and debug
