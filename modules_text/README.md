@@ -2006,7 +2006,7 @@ Now we are going to work with `CSS` a little bit on the `pizza` page.
   `;
   ```
 
-  - `display: grid;`: We gonna continue using the [css grd layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
+  - `display: grid;`: We gonna continue using the [css grid layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
   - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));`: Here we define the `columns` that we will have with the [grid-template-columns](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns). Normally you will need to put a size of each column that you want like this:
     `grid-template-columns: 1fr 1fr 1fr 1fr;`
 
@@ -2687,3 +2687,90 @@ To do this we will be using another `gatsby` specific file call [gatsby-node](ht
 #### Notes:
 
 - We can have the `pizza` query of the `Pizza` template together with the `gatsby-node` template and pass it via `context` but we intend to maintain it separate to be easier to see and debug
+
+### Templating and styling the single pizza page
+
+Now we are going to use and style the `single pizza` page.
+
+- First on the `Pizza.js` file in the `gatsby/templates` directory; add `data: pizza` as a prop of the `SinglePizzaPage` component
+  `export default function SinglePizzaPage({ data: { pizza } }) {...}`
+- Now eliminate the current content that we `return` and add a `react` fragment
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return <></>;
+  }
+  ```
+- Then import `Img` from `gatsby-image`
+  `import Img from 'gatsby-image';`
+- Add the `Img` component to the return content sending the `pizza` image as a `fluid` prop
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+      </>
+    );
+  }
+  ```
+- Now add another container `div` with an `h2` with the class `mark`(make sure you use this class) for the `pizza` name
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+        </div>
+      </>
+    );
+  }
+  ```
+- Now loop throw the `toppings` using a `li` tag for each `topping` name
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+          {pizza.toppings.map((topping) => (
+            <li key={topping.id}>{topping.name}</li>
+          ))}
+        </div>
+      </>
+    );
+  }
+  ```
+- Import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `PizzaGrid` using a `div` from the `styled` object
+  ```js
+  const PizzaGrid = styled.div``;
+  ```
+- Add the following style to the `PizzaGrid` constant
+  ```js
+  const PizzaGrid = styled.div`
+    display: grid;
+    grid-gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  `;
+  ```
+  - `display: grid;`: Use `css grid layout`
+  - `grid-gap: 2rem;`: Add a `gap` between elements
+  - `grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));`: Add columns for the content that will automaclly take sizes depending the space of the container with a minimum sizes of `400px` and maximum `1fr`
+- Add `PizzaGrid` as a container of the returning content
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <PizzaGrid>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+          {pizza.toppings.map((topping) => (
+            <li key={topping.id}>{topping.name}</li>
+          ))}
+        </div>
+      </PizzaGrid>
+    );
+  }
+  ```
