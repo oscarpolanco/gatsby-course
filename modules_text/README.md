@@ -2774,3 +2774,190 @@ Now we are going to use and style the `single pizza` page.
     );
   }
   ```
+
+### Dynamically create Toppings Pages
+
+Just like we did with the `single pizza` page; we need to create a `single page` for each `topping` so when we click on a `topping` in the filter on the `pizza` page will only show the `pizzas` that have that specific `topping`.
+
+- First; on the `gatsby-node` file in the root of the `gatsby` directory; create a function call `turnToppingsIntoPages` that will be an `async` function that destructure it parameter to recive `graphql` and `actions`
+  `async function turnToppingsIntoPages({ graphql, actions }) {}`
+- Now on the `createPages` function use the `turnToppingsIntoPages` function but need to use a `Promise.all` to run both of the functions part of the `createPages` function
+  ```js
+  export async function createPages(params) {
+    await Promise.all([
+      turnPizzasIntoPages(params),
+      turnToppingsIntoPages(params),
+    ]);
+  }
+  ```
+  We need to use `Promise.all` because is we do it separately we will have to wait for the first function that you define to do the other but this thing is not related so we can run at the same time so we use this function that receive an array of `promises` and run it all; then wait to all promises to be resolve
+- Get back to the `turnToppingsIntoPages` function and create a constant call `toppingTemplate` and add the `path` of the template but we don't need to create a new file we will use the `pizza.js` file on the `pages` directory
+  `const toppingTemplate = path.resolve('./src/pages/pizzas.js');`
+- Now add a `query` to get all `toppings` using the `graphql` parameter
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`
+      query {
+        toppings: allSanityTopping {
+          nodes {
+            name
+            id
+          }
+        }
+      }
+    `);
+  }
+  ```
+- Then using the `data` constant we loop throw each `topping node` using the `forEach` function
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {});
+  }
+  ```
+
+- Now add use the `createPage` function from the `action` parameter
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+      actions.createPage();
+    });
+  }
+  ```
+
+- Send the configuration object of the `createPage` function beginning with the `path` with the url that we define before on our `topping` filter in the `pizza` page(`topping/topping_name`)
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+      actions.createPage({
+        path: `topping/${topping.name}`,
+      });
+    });
+  }
+  ```
+
+- Now we add the `component` that will use the `page` i n this case we already have it in the `toppingTemplate` constant
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+       });
+    });
+  }
+  ```
+
+- Then we need to send the `topping` name to the page so we have available that information. We achieve this using the `context` property
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+         context: {
+            topping: topping.name,
+          }
+       });
+    });
+  }
+  ```
+
+- Now we need that the `query` of the `pizza` page filter the `pizzas` depending the `topping` that we click. On the `pizza.js` file in the `pages` directory update the `query` as is show here:
+  ```js
+  export const query = graphql`
+  query PizzaQuery($topping: [String]) {
+    pizzas: allSanityPizza(
+      filter: { toppings: { elemMatch: { name: { in: $topping } } } }
+    ) {...}
+  `;
+  ```
+  - `($topping: [String])`: Receive a variable call `topping` that is an `array` of `strings` and is not require.
+  - `filter`: Filter the data depending on a condition
+  - `toppings: { elemMatch: { name: { in: $topping } } }`: On the `toppings` bring all the elements that match on it `name` property with the `topping` variable
+- Now start your local server
+- Go to the `pizza` page
+- Click on one of the `toppings` that are on the filter
+- You should see that the amount of `pizza` that shows bellow change depending on the `topping` that you click
+- If you need more case sensitive filter you can use a [regex](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). But you can't directly write it into the `query` or use a template string to add the `regex` on the `query` since this is part de `graphQL`; you will need to send it via `context`. On the `gatsby-node` file in the `context` property of the `turnToppingsIntoPages` function add a property call `toppingRegex` with the following rule(case insensitive of the `topping` name)
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+         context: {
+            topping: topping.name,
+            toppingRegex: `/${topping.name}/i`,
+          }
+       });
+    });
+  }
+  ```
+
+- Now modify the `query` on the `pizza.js` file
+  ```js
+  export const query = graphql`
+  query PizzaQuery($toppingRegex: String) {
+    pizzas: allSanityPizza(
+      filter: { toppings: { elemMatch: { name: { regex: $toppingRegex } } } }
+    ) {...}
+  `;
+  ```
+  - `($toppingRegex: String)`: Receive a `toppingRegex` variable that is a `string` and is not required
+  - ` filter`: Filter the data depending on a condition
+  - `{ toppings: { elemMatch: { name: { regex: $toppingRegex } } } }`: On the `toppings` bring all the elements that match on it `name` property with the `regex` that we send
+- Restart your local server
+- Go to the `pizzas` page
+- Click on one of the `toppings`
+- The `pizzas` should change depending on the `topping` that you choose
+- We need to highlight the `link` of the current page. So on the `ToppingsFilter` component update the `ToppingsStyles` rule regarding to the `.active` class to `&[aria-current='page']` page
+  ```js
+  const ToppingsStyles = styled.div`
+    ...
+    a {...}
+      &[aria-current='page'] {
+        background: var(--yellow);
+      }
+    }
+  `;
+  ```
+  `Gatsby` by default put an `aria-current` property to the `link` that match with the current page and we take advantage of that
+- Finally we need to add a `All` link that represent that is going to show all the `pizza` so on the return content before the `topping map` add the following
+  ```js
+  return (
+    <ToppingsStyles>
+      <Link to="/pizzas">
+        <span className="name">All</span>
+        <span className="count">{pizzas.nodes.length}</span>
+      </Link>
+      {toppingsWithCounts.map((topping) => (...))}
+    </ToppingsStyles>
+  );
+  ```
+- Now go to the `pizzas` page
+- You should have an `All` option and when you click on it; will be highlight and will show all `pizzas`
