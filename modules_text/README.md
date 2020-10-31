@@ -2961,3 +2961,199 @@ Just like we did with the `single pizza` page; we need to create a `single page`
   ```
 - Now go to the `pizzas` page
 - You should have an `All` option and when you click on it; will be highlight and will show all `pizzas`
+
+### Sourcing data form an external API
+
+So far all the data of the website live on `sanity` but if we need to get data from an external API and still have all the benefits of `gatsby`; we can do this first by bringing the data to our ` gatsby graphQL` API so we do the `query` and the `gatsby-node` file can help us with these.
+
+We are going to be `sourcing nodes`. `Sourcing` is to put data on the `gatsby` API and `nodes` are the piece of data.
+
+- First; on your editor go to the `gatsby-node` file
+- Export a `async` function call [sourceNodes](https://www.gatsbyjs.com/docs/node-apis/#sourceNodes) before the `createPages` function that recive a `params` value
+  `export async function sourceNodes(params) {}`
+
+  This function will run before the `createPages` function because we need to have all `nodes` available before the `pages` are created
+
+- Create another `async` function call `fetchBeersAndTurnIntoNodes` that recive `actions`, `createNodeId` and `createContentDigest` as destructure values
+  `async function fetchBeersAndTurnIntoNodes({actions, createNodeId, createContentDigest}) {}`
+- On the `sourceNodes` function add a `Promise.all` that recive the `fetchBeersAndTurnIntoNodes` sending `params` as it parameter
+  ```js
+  export async function sourceNodes(params) {
+    await Promise.all([fetchBeersAndTurnIntoNodes(params)]);
+  }
+  ```
+  We added to the `Promise.all` because if we want to add something on the future will be a lot ease for us
+- Since we need the `fetch` function and this function doesn't exist on `node`; we need the `isomorphic-fetch` package so at the top of the file import `fetch` from `isomorphic-fetch`
+  `import fetch from 'isomorphic-fetch';`
+- Now inside of the `fetchBeersAndTurnIntoNodes` function create a constant call `res` that will recive the `response` of the `fetch` function
+  ```js
+  async function fetchBeersAndTurnIntoNodes({
+    actions,
+    createNodeId,
+    createContentDigest,
+  }) {
+    const res = await fetch();
+  }
+  ```
+- We are going to be using the data from an `API` from https://sampleapis.com/
+- On this page; search for `beers` and click on `API`
+- Choose the `ale` beers(we are going to use this in this example)
+- You will be redirected to a `JSON` with hundreds of `beers`(We are not particularly worried about the number of `beers` because this will be `fetch` on build time)
+- Copy the URL and put it on the `fetch` function inside of the `fetchBeersAndTurnIntoNodes` function
+  ```js
+  async function fetchBeersAndTurnIntoNodes({
+    actions,
+    createNodeId,
+    createContentDigest,
+  }) {
+    const res = await fetch("https://sampleapis.com/beers/api/ale");
+  }
+  ```
+- Now create a constant call `beers` that recive the transformation to a `JSON` of `res`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+  }
+  ```
+- Then we need to loop throw each `beer` using a `for of`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {}
+  }
+  ```
+- We need to create a `node` for each `beer` so first create a variable call `nodeMeta` that will recive an object
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {}
+    }
+  }
+  ```
+  We need to set some `metadata` about the data that we will turn into a `node`
+- We need to set an `id` of the `node` but if you check the `beer` data we don't have an `id` so we need to create it but we have the `createNodeId` helper that we recive as a parameter. We will use `beer-name_of_beer` as `id`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+   const res = await fetch('https://sampleapis.com/beers/api/ale');
+   const beers = await res.json();
+   for (const beer of beers) {
+     const nodeMeta = {
+       id: createNodeId(`beer-${beer.name}`),
+     }
+   }
+  }
+  ```
+- If this was a relational data like if the `beer` have a parent `beer` you can linked to another `node` using the `parent` property but in this case we don't have such thing as parent `beer`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+      }
+    }
+  }
+  ```
+- A lot like the `parent` property we have a `children` property to relate the `nodes` but in this case, we also don't have any
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+      }
+    }
+  }
+  ```
+- Also we have an `internal` property that recive an object
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {}
+      }
+    }
+  }
+  ```
+- Inside of the `internal` object we define the `type` of the `node`. At this case we will put the `type` as `Beer`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+        }
+      }
+    }
+  }
+  ```
+  This will define our `query` name
+- Then add the `mediaType` property that will help other `plugins` that are looking for specific type of media this will be help then to find it. In this case is a `JSON`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+          mediaType: 'application/json',
+        }
+      }
+    }
+  }
+  ```
+- We need to specify the `contentDigest` that internally `gatsby` know that the data change
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+          mediaType: 'application/json',
+          contentDigest: createContentDigest(beer)
+        }
+      }
+    }
+  }
+  ```
+- Finally use the `createNode` of the `actions` object with the data of the `beer` and the `metadata` object as part of the same object as a parameter
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    ...
+    for (const beer of beers) {...}
+    actions.createNode({
+      ...beer,
+      ...nodeMeta,
+    });
+  }
+  ```
+- Now restart your local server and go to the `graphQL` playground
+- You should see that you have an `AllBeer` and `beer` queries on the explorer
