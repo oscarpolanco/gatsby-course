@@ -3157,3 +3157,382 @@ We are going to be `sourcing nodes`. `Sourcing` is to put data on the `gatsby` A
   ```
 - Now restart your local server and go to the `graphQL` playground
 - You should see that you have an `AllBeer` and `beer` queries on the explorer
+
+### Query, displaying and styling the beers page
+
+Now we are going to be working with the `beers` page since we already have the information available on the application.
+
+- First; we need to `query` the data on the page so go to the `beer.js` file and import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Bellow of the `BeersPage` component export a constant call `query` that its value will be the `query` result
+  ```js
+  export const query = graphql``;
+  ```
+- Now make a `query` and called `beers` that bring the `id`, `name`, `price`, `rating`: { `average`, `reviews` }, `image`
+  ```js
+  export const query = graphql`
+    query BeerQuery {
+      beers: allBeer {
+        nodes {
+          id
+          name
+          price
+          rating {
+            average
+            reviews
+          }
+          image
+        }
+      }
+    }
+  `;
+  ```
+- Now add the `data` prop to the `BeersPage` component
+  `export default function BeersPage({ data }) {}`
+- Extract the `nodes` from the data prop
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (..);
+  }
+  ```
+- Delete the current value with of the return statement
+- Add an `h2` with the `className` of `center` and add the following title
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+      </>
+    );
+  }
+  ```
+- Now we need to `loop` throw each `beer`; so make a `div` and add the `map` function inside of it
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>{beers.map((beer) => {})}</div>
+      </>
+    );
+  }
+  ```
+- Inside of the `map` function return a `div` with a `key` that will be the `beers` id
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return <div key={beer.id}></div>;
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Add `image` tag that the `src` will be the `image` property of the `beer` and the `alt` will be the `beer` name
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+  Since this `images` are hosted outside of `gatsby` we won't use the `gatsby-images` component but fi you want to use it you have to download the `images` then `source` then to `gatsby`
+- Bellow the `image` tag; add an `h3` tag with the `beer` name
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Bellow the `h3` we need to add the `price` of the `beer`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- We need to add the `rating` but first we need to know what is the actual `rating` out of five. If you see we have a decimal value on the `beers` object so we will `round` that value to the closest integer value. Before the return statement inside of the `map` function use the `round` function from `Math` to find the `rating`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Then we use a `p` tag and inside of it `repeat` the start emoji using the `rating` value
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p>{`⭐`.repeat(rating)}</p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now we need to show the rest of the starts that are not part of the actual `rating`. Bellow the start rating add a `span` tag and inside repeat the start emoji 5 minus the `rating` value times and add some inline style to give those starts a `gray` color
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Put a `title` on the `p` tag to make this block more accessible telling the user the `rating`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p title={`${rating} out of 5 stars`}>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Inside of the `p` that we will give the number of people that actually review the `beer` so add a `span` with the `reviews` property as it content
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p title={`${rating} out of 5 stars`}>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                  <span>({beer.rating.reviews})</span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now we can add some styling to the page. Import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Then create a constant call `BeerGridStyle` that is a `styled.div`
+  ```js
+  const BeerGridStyle = styled.div``;
+  ```
+- Replace the `div` that enclose the `map` function with `BeerGridStyle`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <BeerGridStyle>
+          {beers.map((beer) => {...})}
+        </BeerGridStyle>
+      </>
+    );
+  }
+  ```
+- Then add the folloing style to the `BeerGridStyle`
+  ```js
+  const BeerGridStyle = styled.div`
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  `;
+  ```
+  As we see before this will use the `grid` add a space between columns and define the columns depending on the sizes of the container
+- Create another constant call `SingleBeerStyles` that is a `styled.div`
+  ```js
+  const SingleBeerStyles = styled.div``;
+  ```
+- Replace the `div` inside of the return statement of the `map` function with `SingleBeerStyles`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <BeerGridStyle>
+          {beers.map((beer) => {
+            return <SingleBeerStyles key={beer.id}>...</SingleBeerStyles>;
+          })}
+        </BeerGridStyle>
+      </>
+    );
+  }
+  ```
+- Add the following style to `SingleBeerStyles`
+  ```js
+  const SingleBeerStyles = styled.div`
+    border: 1px solid var(--grey);
+    padding: 2rem;
+    text-align: center;
+  `;
+  ```
+  This will put a gray border to each element and give some space between the elements inside of the container of each beer and the borders and align everything to the center
+- Then add the following style for the `images` inside of `SingleBeerStyles`
+  ```js
+  const SingleBeerStyles = styled.div`
+    border: 1px solid var(--grey);
+    padding: 2rem;
+    text-align: center;
+    img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      display: grid;
+      align-items: center;
+      font-size: 10px;
+    }
+  `;
+  ```
+  We define the actual size of the `image` but in some cases that image will be stretch so, we use the `object-fit` with `contain` so the `image` will always fit the container regardless of its size. Sometimes some of the `images` will not show up and only will be the name of the `image` so will need to give the size of the letters; along to the center and us `grid`.
