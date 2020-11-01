@@ -20,6 +20,8 @@
 - [Beers page](http://localhost:8000/beers)
 - [Order page](http://localhost:8000/order)
 - [Pizza page](http://localhost:8000/pizzas)
+- [Pizza by topping page](http://localhost:8000/topping/Hot%20Peppers)(This URL is for a `Hot peppers` page. At the end of the URL always will be `/topping/${topping_name}`)
+- [Single Pizza page](http://localhost:8000/pizza/cluck-norris)(This URL if for the `Cluck Norris` pizza. At the end of the URL always will be `/pizza/${pizza_slug}`)
 - [Slicemaster page](http://localhost:8000/slicemaster)
 
 ## Step to run the example

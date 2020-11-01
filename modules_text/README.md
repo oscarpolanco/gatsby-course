@@ -2006,7 +2006,7 @@ Now we are going to work with `CSS` a little bit on the `pizza` page.
   `;
   ```
 
-  - `display: grid;`: We gonna continue using the [css grd layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
+  - `display: grid;`: We gonna continue using the [css grid layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
   - `grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));`: Here we define the `columns` that we will have with the [grid-template-columns](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns). Normally you will need to put a size of each column that you want like this:
     `grid-template-columns: 1fr 1fr 1fr 1fr;`
 
@@ -2138,6 +2138,7 @@ At this stage of the example, we want to create a `topping` filter that has all 
 - Now we need to count how many `pizzas` have each `topping`. Before the `ToppingFilter` function create a function call `countPizzasInToppings` that recive the `pizzas` as a parameter
   `function countPizzasInToppings(pizzas) {}`
 - After the query create a constant call `toppingsWithCounts` and use the `countPizzasInToppings` function as it value sending the result of the `pizzas` (Need to send `pizzas.nodes`)
+
   ```js
   export default function ToppingFilter() {
     const { toppings, pizzas } = useStaticQuery(graphql`...`);
@@ -2145,6 +2146,7 @@ At this stage of the example, we want to create a `topping` filter that has all 
     const toppingsWithCounts = countPizzasInToppings(pizzas.nodes);
   }
   ```
+
 - Then on the `countPizzasInToppings` return a `map` of each `pizza topping`
   ```js
   function countPizzasInToppings(pizzas) {
@@ -2246,6 +2248,7 @@ This will add the value of a existing topping in the `acumulator` and if it does
   }
   ```
 - Then we want to `sort` the `toppings` from the `topping` that have more `pizzas` to the `topping` that have less so instead of return the `pizzas` we are going to create a constant call `count`
+
   ```js
   function countPizzasInToppings(pizzas) {
     const counts = pizzas
@@ -2267,6 +2270,7 @@ This will add the value of a existing topping in the `acumulator` and if it does
       }, {});
   }
   ```
+
 - Bellow the `counts` constant create another constant call `sortedToppings` and make it value an `array` of values to use the `sort` function
 
   ```js
@@ -2475,3 +2479,1060 @@ const ToppingsStyles = styled.div``;
   `;
   ```
   We just add a `yellow` background when an `anchor` is on the `active` state
+
+## Module 7: Making Gatsby Dynamic
+
+In this module, we will be working with the dynamic parts of the site such as the single pizza and toppings pages that will need a dynamic page generation so we don't need to create a file for every single page that we have.
+
+### Dynamically creating pages with gatsby-node
+
+We will be working on the `pizzas` page and as you may notice on each title you have a link that goes to an URL that at this moment doesn't work. These URLs are what we call a single page that is a page that will contain the information of a single item in this case one `pizza`.
+
+To do this we will be using another `gatsby` specific file call [gatsby-node](https://www.gatsbyjs.com/docs/node-apis/); like the other `gatsby-` files we hook to a certain moment of the build cycle to do some things like dynamically create pages. We will be using the `createPages` extension point(can be called a hook) that is called after the initial sourcing of data(After all our `sanity` data is pull to our `graphQL` API) so you can `query` data to create pages.
+
+- First; on the root of the `gatsby` directory create a file called `gatsby-node.js`
+- Now on the newly created file export a function call `createPages`(`gatsby` specific function) that will be an `async` function
+  `export async function createPages() {}`
+- Now add a `console.log` with a message inside of the `createPages` function
+- Go to your terminal a start you local server using: `npm start`
+- You should see the message that you add on the `createPages` function on your local server logs
+- Now delete the `console.log`
+- Add `params` as a param of the `createPages` function
+  `export async function createPages(params) {}`
+
+  `Gatsby` will send to you a set of params by default that are `graphql` and `actions` inside of `params`
+
+  - `graphql`: Help us to `query` data
+  - `actions`: Help us to create `pages`
+
+- Now at the top of the file import `path` from `path`
+  `import path from 'path';`
+- Now before the `createPages` function; create a function call `turnPizzasIntoPages` that will also be an `async` function
+  `async function turnPizzasIntoPages() {}`
+
+  Since we are going to create dynamically `pizzas`, `toppings` and `slidemasters` pages we are going to separate in functions each of then so will be easy to see and debug if is an issue
+
+- The `turnPizzasIntoPages` will recive `params` but we will destructuring to `graphql` and `actions`
+  `async function turnPizzasIntoPages({ graphql, actions }) {}`
+- Now that we have a function for the `pizzas` we need to create a `template` that we will render all the `pizza` information. On the `gatsby/templates` directory create a file call `Pizzas.js`(Since this is a `template` and can be used multiple times we put the uppercase on the name). You can store this file in the `components` directory but it will be easier to search the `templates` if we got then in it own directory
+- Inside of the newly created file import `React`
+  `import React from 'react';`
+- Then export a function call `SinglePizzaPage` with some content
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+  ```
+- Now go back to the `gatsby-node` file and inside of the `turnPizzasIntoPages` function create a constant call `pizzaTemplate` that will have the `template` that we just created. To resolve the `template` file we need to use a `node` module call `path` that we already import before
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+  }
+  ```
+  The `path` module comes directly from `node` no need to install any extra module
+- Then on the `createPages` function use the `turnPizzasIntoPages` function sending `params` to it(remember that `turnPizzasIntoPages` is an `async` function)
+  ```js
+  export async function createPages(params) {
+    await turnPizzasIntoPages(params);
+  }
+  ```
+  The `turnPizzasIntoPages` will `query` data and create the `pages` and that will take a couple os seconds that is why is an `async` function.
+- Inside of the `turnPizzasIntoPages` function add the following `graphQL` query
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`
+      query {
+        pizzas: allSanityPizza {
+          nodes {
+            name
+            slug {
+              current
+            }
+          }
+        }
+      }
+    `);
+  }
+  ```
+  Since we are on the `node` API we need to put `await` before the `graphql` function; then we add the `query` to get all `pizzas`
+- Now we need to loop on every `pizza` using the `forEach` function to create the page
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {});
+  }
+  ```
+
+- Then use `createPage` function of the `actions` param
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage();
+    });
+  }
+  ```
+
+- Inside of the `createPage` function add the following configuration object
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage({
+        path: `pizza/${pizza.slug.current}`,
+        component: pizzaTemplate,
+      });
+    });
+  }
+  ```
+
+  - `path`: The URL of the new page(This is what we defined on the links)
+  - `component`: This will be the component that will be called when you got a URL match
+
+- Restart your local server(Every time you make an update in the `gatsby-node` file; you will need to restart your server)
+- Go to the `pizzas` page on your browser
+- Click on one of the `pizza` titles
+- You should see the message that you put on the `Pizza` template
+- Now we are going to pass data to the template from the `gatsby-node` file and for this we use the `context` property
+  Inside of the `createPage` function add the following configuration object
+
+  ```js
+  async function turnPizzasIntoPages({ graphql, actions }) {
+    const pizzaTemplate = path.resolve("./src/templates/Pizza.js");
+    const { data } = await graphql(`...`);
+
+    data.pizzas.nodes.forEach((pizza) => {
+      actions.createPage({
+        path: `pizza/${pizza.slug.current}`,
+        component: pizzaTemplate,
+        context: {
+          slug: pizza.slug.current,
+        },
+      });
+    });
+  }
+  ```
+
+- Restart your local server
+- Go to one of the single `pizza` pages
+- Open the browser inspector
+- Go to the `components` tap
+- Search for the `SinglePizzaPage` component and click on it
+- On the `props` side you will see a `pageContext` prop with the information that you put on the `context` property before(The is a `pathContext` also but this is deprecated)
+- Now on the `Pizza.js` template import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Add a regular a `graphQL` query that use `sanityPizza` instead of all `allSanityPizza` that bring the `name`, `id`, `image` and `toppings` from a `pizza`
+
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+
+  export const query = graphql`
+    query {
+      pizza: sanityPizza {
+        name
+        id
+        image {
+          asset {
+            fluid(maxWidth: 800) {
+              ...GatsbySanityImageFluid
+            }
+          }
+        }
+        toppings {
+          name
+          id
+          vegetarian
+        }
+      }
+    }
+  `;
+  ```
+
+  But actually, this won't work because we need to specify the `pizza` that we need the information and we have the `slug` available to help us to make the `query` dynamic
+
+- Add the following on the `query`
+
+  ```js
+  export default function SinglePizzaPage() {
+    return <p>Single Pizza</p>;
+  }
+
+  export const query = graphql`
+    query($slug: String!) {
+      pizza: sanityPizza(slug: { current: { eq: $slug } }) {...}
+  `;
+  ```
+
+  - `($slug: String!)`: The `query` will expect that a `slug` will be pass; the `slug` will be a `string` and it will be `required`(The `!` at the en make it `required`)
+  - `(slug: { current: { eq: $slug } })`: We tell the `query` that we want a `single pizza` that inside of the `slug` property have an object with a `current` property that will be `equal` to the `slug` that we pass
+
+- Now go to your browser to one of the `single pizza` pages
+- Open the browser inspector
+- Go to the `component` tab
+- Search the `SinglePizza` component
+- You should see on the `props` the resolve of the `pizza` query
+
+#### Notes:
+
+- We can have the `pizza` query of the `Pizza` template together with the `gatsby-node` template and pass it via `context` but we intend to maintain it separate to be easier to see and debug
+
+### Templating and styling the single pizza page
+
+Now we are going to use and style the `single pizza` page.
+
+- First on the `Pizza.js` file in the `gatsby/templates` directory; add `data: pizza` as a prop of the `SinglePizzaPage` component
+  `export default function SinglePizzaPage({ data: { pizza } }) {...}`
+- Now eliminate the current content that we `return` and add a `react` fragment
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return <></>;
+  }
+  ```
+- Then import `Img` from `gatsby-image`
+  `import Img from 'gatsby-image';`
+- Add the `Img` component to the return content sending the `pizza` image as a `fluid` prop
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+      </>
+    );
+  }
+  ```
+- Now add another container `div` with an `h2` with the class `mark`(make sure you use this class) for the `pizza` name
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+        </div>
+      </>
+    );
+  }
+  ```
+- Now loop throw the `toppings` using a `li` tag for each `topping` name
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+          {pizza.toppings.map((topping) => (
+            <li key={topping.id}>{topping.name}</li>
+          ))}
+        </div>
+      </>
+    );
+  }
+  ```
+- Import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `PizzaGrid` using a `div` from the `styled` object
+  ```js
+  const PizzaGrid = styled.div``;
+  ```
+- Add the following style to the `PizzaGrid` constant
+  ```js
+  const PizzaGrid = styled.div`
+    display: grid;
+    grid-gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  `;
+  ```
+  - `display: grid;`: Use `css grid layout`
+  - `grid-gap: 2rem;`: Add a `gap` between elements
+  - `grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));`: Add columns for the content that will automaclly take sizes depending the space of the container with a minimum sizes of `400px` and maximum `1fr`
+- Add `PizzaGrid` as a container of the returning content
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <PizzaGrid>
+        <Img fluid={pizza.image.asset.fluid} />
+        <div>
+          <h2 className="mark">{pizza.name}</h2>
+          {pizza.toppings.map((topping) => (
+            <li key={topping.id}>{topping.name}</li>
+          ))}
+        </div>
+      </PizzaGrid>
+    );
+  }
+  ```
+
+### Dynamically create Toppings Pages
+
+Just like we did with the `single pizza` page; we need to create a `single page` for each `topping` so when we click on a `topping` in the filter on the `pizza` page will only show the `pizzas` that have that specific `topping`.
+
+- First; on the `gatsby-node` file in the root of the `gatsby` directory; create a function call `turnToppingsIntoPages` that will be an `async` function that destructure it parameter to recive `graphql` and `actions`
+  `async function turnToppingsIntoPages({ graphql, actions }) {}`
+- Now on the `createPages` function use the `turnToppingsIntoPages` function but need to use a `Promise.all` to run both of the functions part of the `createPages` function
+  ```js
+  export async function createPages(params) {
+    await Promise.all([
+      turnPizzasIntoPages(params),
+      turnToppingsIntoPages(params),
+    ]);
+  }
+  ```
+  We need to use `Promise.all` because is we do it separately we will have to wait for the first function that you define to do the other but this thing is not related so we can run at the same time so we use this function that receive an array of `promises` and run it all; then wait to all promises to be resolve
+- Get back to the `turnToppingsIntoPages` function and create a constant call `toppingTemplate` and add the `path` of the template but we don't need to create a new file we will use the `pizza.js` file on the `pages` directory
+  `const toppingTemplate = path.resolve('./src/pages/pizzas.js');`
+- Now add a `query` to get all `toppings` using the `graphql` parameter
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`
+      query {
+        toppings: allSanityTopping {
+          nodes {
+            name
+            id
+          }
+        }
+      }
+    `);
+  }
+  ```
+- Then using the `data` constant we loop throw each `topping node` using the `forEach` function
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {});
+  }
+  ```
+
+- Now add use the `createPage` function from the `action` parameter
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+      actions.createPage();
+    });
+  }
+  ```
+
+- Send the configuration object of the `createPage` function beginning with the `path` with the url that we define before on our `topping` filter in the `pizza` page(`topping/topping_name`)
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve("./src/pages/pizzas.js");
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+      actions.createPage({
+        path: `topping/${topping.name}`,
+      });
+    });
+  }
+  ```
+
+- Now we add the `component` that will use the `page` i n this case we already have it in the `toppingTemplate` constant
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+       });
+    });
+  }
+  ```
+
+- Then we need to send the `topping` name to the page so we have available that information. We achieve this using the `context` property
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+         context: {
+            topping: topping.name,
+          }
+       });
+    });
+  }
+  ```
+
+- Now we need that the `query` of the `pizza` page filter the `pizzas` depending the `topping` that we click. On the `pizza.js` file in the `pages` directory update the `query` as is show here:
+  ```js
+  export const query = graphql`
+  query PizzaQuery($topping: [String]) {
+    pizzas: allSanityPizza(
+      filter: { toppings: { elemMatch: { name: { in: $topping } } } }
+    ) {...}
+  `;
+  ```
+  - `($topping: [String])`: Receive a variable call `topping` that is an `array` of `strings` and is not require.
+  - `filter`: Filter the data depending on a condition
+  - `toppings: { elemMatch: { name: { in: $topping } } }`: On the `toppings` bring all the elements that match on it `name` property with the `topping` variable
+- Now start your local server
+- Go to the `pizza` page
+- Click on one of the `toppings` that are on the filter
+- You should see that the amount of `pizza` that shows bellow change depending on the `topping` that you click
+- If you need more case sensitive filter you can use a [regex](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). But you can't directly write it into the `query` or use a template string to add the `regex` on the `query` since this is part de `graphQL`; you will need to send it via `context`. On the `gatsby-node` file in the `context` property of the `turnToppingsIntoPages` function add a property call `toppingRegex` with the following rule(case insensitive of the `topping` name)
+
+  ```js
+  async function turnToppingsIntoPages({ graphql, actions }) {
+    const toppingTemplate = path.resolve('./src/pages/pizzas.js');
+    const { data } = await graphql(`...`);
+
+    data.toppings.nodes.forEach((topping) => {
+       actions.createPage({
+         path: `topping/${topping.name}`
+         component: toppingTemplate,
+         context: {
+            topping: topping.name,
+            toppingRegex: `/${topping.name}/i`,
+          }
+       });
+    });
+  }
+  ```
+
+- Now modify the `query` on the `pizza.js` file
+  ```js
+  export const query = graphql`
+  query PizzaQuery($toppingRegex: String) {
+    pizzas: allSanityPizza(
+      filter: { toppings: { elemMatch: { name: { regex: $toppingRegex } } } }
+    ) {...}
+  `;
+  ```
+  - `($toppingRegex: String)`: Receive a `toppingRegex` variable that is a `string` and is not required
+  - ` filter`: Filter the data depending on a condition
+  - `{ toppings: { elemMatch: { name: { regex: $toppingRegex } } } }`: On the `toppings` bring all the elements that match on it `name` property with the `regex` that we send
+- Restart your local server
+- Go to the `pizzas` page
+- Click on one of the `toppings`
+- The `pizzas` should change depending on the `topping` that you choose
+- We need to highlight the `link` of the current page. So on the `ToppingsFilter` component update the `ToppingsStyles` rule regarding to the `.active` class to `&[aria-current='page']` page
+  ```js
+  const ToppingsStyles = styled.div`
+    ...
+    a {...}
+      &[aria-current='page'] {
+        background: var(--yellow);
+      }
+    }
+  `;
+  ```
+  `Gatsby` by default put an `aria-current` property to the `link` that match with the current page and we take advantage of that
+- Finally we need to add a `All` link that represent that is going to show all the `pizza` so on the return content before the `topping map` add the following
+  ```js
+  return (
+    <ToppingsStyles>
+      <Link to="/pizzas">
+        <span className="name">All</span>
+        <span className="count">{pizzas.nodes.length}</span>
+      </Link>
+      {toppingsWithCounts.map((topping) => (...))}
+    </ToppingsStyles>
+  );
+  ```
+- Now go to the `pizzas` page
+- You should have an `All` option and when you click on it; will be highlight and will show all `pizzas`
+
+### Sourcing data form an external API
+
+So far all the data of the website live on `sanity` but if we need to get data from an external API and still have all the benefits of `gatsby`; we can do this first by bringing the data to our ` gatsby graphQL` API so we do the `query` and the `gatsby-node` file can help us with these.
+
+We are going to be `sourcing nodes`. `Sourcing` is to put data on the `gatsby` API and `nodes` are the piece of data.
+
+- First; on your editor go to the `gatsby-node` file
+- Export a `async` function call [sourceNodes](https://www.gatsbyjs.com/docs/node-apis/#sourceNodes) before the `createPages` function that recive a `params` value
+  `export async function sourceNodes(params) {}`
+
+  This function will run before the `createPages` function because we need to have all `nodes` available before the `pages` are created
+
+- Create another `async` function call `fetchBeersAndTurnIntoNodes` that recive `actions`, `createNodeId` and `createContentDigest` as destructure values
+  `async function fetchBeersAndTurnIntoNodes({actions, createNodeId, createContentDigest}) {}`
+- On the `sourceNodes` function add a `Promise.all` that recive the `fetchBeersAndTurnIntoNodes` sending `params` as it parameter
+  ```js
+  export async function sourceNodes(params) {
+    await Promise.all([fetchBeersAndTurnIntoNodes(params)]);
+  }
+  ```
+  We added to the `Promise.all` because if we want to add something on the future will be a lot ease for us
+- Since we need the `fetch` function and this function doesn't exist on `node`; we need the `isomorphic-fetch` package so at the top of the file import `fetch` from `isomorphic-fetch`
+  `import fetch from 'isomorphic-fetch';`
+- Now inside of the `fetchBeersAndTurnIntoNodes` function create a constant call `res` that will recive the `response` of the `fetch` function
+  ```js
+  async function fetchBeersAndTurnIntoNodes({
+    actions,
+    createNodeId,
+    createContentDigest,
+  }) {
+    const res = await fetch();
+  }
+  ```
+- We are going to be using the data from an `API` from https://sampleapis.com/
+- On this page; search for `beers` and click on `API`
+- Choose the `ale` beers(we are going to use this in this example)
+- You will be redirected to a `JSON` with hundreds of `beers`(We are not particularly worried about the number of `beers` because this will be `fetch` on build time)
+- Copy the URL and put it on the `fetch` function inside of the `fetchBeersAndTurnIntoNodes` function
+  ```js
+  async function fetchBeersAndTurnIntoNodes({
+    actions,
+    createNodeId,
+    createContentDigest,
+  }) {
+    const res = await fetch("https://sampleapis.com/beers/api/ale");
+  }
+  ```
+- Now create a constant call `beers` that recive the transformation to a `JSON` of `res`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+  }
+  ```
+- Then we need to loop throw each `beer` using a `for of`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {}
+  }
+  ```
+- We need to create a `node` for each `beer` so first create a variable call `nodeMeta` that will recive an object
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {}
+    }
+  }
+  ```
+  We need to set some `metadata` about the data that we will turn into a `node`
+- We need to set an `id` of the `node` but if you check the `beer` data we don't have an `id` so we need to create it but we have the `createNodeId` helper that we recive as a parameter. We will use `beer-name_of_beer` as `id`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+   const res = await fetch('https://sampleapis.com/beers/api/ale');
+   const beers = await res.json();
+   for (const beer of beers) {
+     const nodeMeta = {
+       id: createNodeId(`beer-${beer.name}`),
+     }
+   }
+  }
+  ```
+- If this was a relational data like if the `beer` have a parent `beer` you can linked to another `node` using the `parent` property but in this case we don't have such thing as parent `beer`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+      }
+    }
+  }
+  ```
+- A lot like the `parent` property we have a `children` property to relate the `nodes` but in this case, we also don't have any
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+      }
+    }
+  }
+  ```
+- Also we have an `internal` property that recive an object
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {}
+      }
+    }
+  }
+  ```
+- Inside of the `internal` object we define the `type` of the `node`. At this case we will put the `type` as `Beer`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+        }
+      }
+    }
+  }
+  ```
+  This will define our `query` name
+- Then add the `mediaType` property that will help other `plugins` that are looking for specific type of media this will be help then to find it. In this case is a `JSON`
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+          mediaType: 'application/json',
+        }
+      }
+    }
+  }
+  ```
+- We need to specify the `contentDigest` that internally `gatsby` know that the data change
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    const res = await fetch('https://sampleapis.com/beers/api/ale');
+    const beers = await res.json();
+    for (const beer of beers) {
+      const nodeMeta = {
+        id: createNodeId(`beer-${beer.name}`),
+        parent: null,
+        children: [],
+        internal: {
+          type: 'Beer',
+          mediaType: 'application/json',
+          contentDigest: createContentDigest(beer)
+        }
+      }
+    }
+  }
+  ```
+- Finally use the `createNode` of the `actions` object with the data of the `beer` and the `metadata` object as part of the same object as a parameter
+  ```js
+  async function fetchBeersAndTurnIntoNodes({...}) {
+    ...
+    for (const beer of beers) {...}
+    actions.createNode({
+      ...beer,
+      ...nodeMeta,
+    });
+  }
+  ```
+- Now restart your local server and go to the `graphQL` playground
+- You should see that you have an `AllBeer` and `beer` queries on the explorer
+
+### Query, displaying and styling the beers page
+
+Now we are going to be working with the `beers` page since we already have the information available on the application.
+
+- First; we need to `query` the data on the page so go to the `beer.js` file and import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Bellow of the `BeersPage` component export a constant call `query` that its value will be the `query` result
+  ```js
+  export const query = graphql``;
+  ```
+- Now make a `query` and called `beers` that bring the `id`, `name`, `price`, `rating`: { `average`, `reviews` }, `image`
+  ```js
+  export const query = graphql`
+    query BeerQuery {
+      beers: allBeer {
+        nodes {
+          id
+          name
+          price
+          rating {
+            average
+            reviews
+          }
+          image
+        }
+      }
+    }
+  `;
+  ```
+- Now add the `data` prop to the `BeersPage` component
+  `export default function BeersPage({ data }) {}`
+- Extract the `nodes` from the data prop
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (..);
+  }
+  ```
+- Delete the current value with of the return statement
+- Add an `h2` with the `className` of `center` and add the following title
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+      </>
+    );
+  }
+  ```
+- Now we need to `loop` throw each `beer`; so make a `div` and add the `map` function inside of it
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>{beers.map((beer) => {})}</div>
+      </>
+    );
+  }
+  ```
+- Inside of the `map` function return a `div` with a `key` that will be the `beers` id
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return <div key={beer.id}></div>;
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Add `image` tag that the `src` will be the `image` property of the `beer` and the `alt` will be the `beer` name
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+  Since this `images` are hosted outside of `gatsby` we won't use the `gatsby-images` component but fi you want to use it you have to download the `images` then `source` then to `gatsby`
+- Bellow the `image` tag; add an `h3` tag with the `beer` name
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Bellow the `h3` we need to add the `price` of the `beer`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- We need to add the `rating` but first we need to know what is the actual `rating` out of five. If you see we have a decimal value on the `beers` object so we will `round` that value to the closest integer value. Before the return statement inside of the `map` function use the `round` function from `Math` to find the `rating`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Then we use a `p` tag and inside of it `repeat` the start emoji using the `rating` value
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p>{`⭐`.repeat(rating)}</p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now we need to show the rest of the starts that are not part of the actual `rating`. Bellow the start rating add a `span` tag and inside repeat the start emoji 5 minus the `rating` value times and add some inline style to give those starts a `gray` color
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Put a `title` on the `p` tag to make this block more accessible telling the user the `rating`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p title={`${rating} out of 5 stars`}>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Inside of the `p` that we will give the number of people that actually review the `beer` so add a `span` with the `reviews` property as it content
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <div>
+          {beers.map((beer) => {
+            const rating = Math.round(beer.rating.average);
+            return (
+              <div key={beer.id}>
+                <img src={beer.image} alt={beer.name} />
+                <h3>{beer.name}</h3>
+                {beer.price}
+                <p title={`${rating} out of 5 stars`}>
+                  {`⭐`.repeat(rating)}
+                  <span style={{ filter: `grayscale(100%)` }}>
+                    {`⭐`.repeat(5 - rating)}
+                  </span>
+                  <span>({beer.rating.reviews})</span>
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now we can add some styling to the page. Import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Then create a constant call `BeerGridStyle` that is a `styled.div`
+  ```js
+  const BeerGridStyle = styled.div``;
+  ```
+- Replace the `div` that enclose the `map` function with `BeerGridStyle`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <BeerGridStyle>
+          {beers.map((beer) => {...})}
+        </BeerGridStyle>
+      </>
+    );
+  }
+  ```
+- Then add the folloing style to the `BeerGridStyle`
+  ```js
+  const BeerGridStyle = styled.div`
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  `;
+  ```
+  As we see before this will use the `grid` add a space between columns and define the columns depending on the sizes of the container
+- Create another constant call `SingleBeerStyles` that is a `styled.div`
+  ```js
+  const SingleBeerStyles = styled.div``;
+  ```
+- Replace the `div` inside of the return statement of the `map` function with `SingleBeerStyles`
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine in only!
+        </h2>
+        <BeerGridStyle>
+          {beers.map((beer) => {
+            return <SingleBeerStyles key={beer.id}>...</SingleBeerStyles>;
+          })}
+        </BeerGridStyle>
+      </>
+    );
+  }
+  ```
+- Add the following style to `SingleBeerStyles`
+  ```js
+  const SingleBeerStyles = styled.div`
+    border: 1px solid var(--grey);
+    padding: 2rem;
+    text-align: center;
+  `;
+  ```
+  This will put a gray border to each element and give some space between the elements inside of the container of each beer and the borders and align everything to the center
+- Then add the following style for the `images` inside of `SingleBeerStyles`
+  ```js
+  const SingleBeerStyles = styled.div`
+    border: 1px solid var(--grey);
+    padding: 2rem;
+    text-align: center;
+    img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      display: grid;
+      align-items: center;
+      font-size: 10px;
+    }
+  `;
+  ```
+  We define the actual size of the `image` but in some cases that image will be stretch so, we use the `object-fit` with `contain` so the `image` will always fit the container regardless of its size. Sometimes some of the `images` will not show up and only will be the name of the `image` so will need to give the size of the letters; along to the center and us `grid`.
