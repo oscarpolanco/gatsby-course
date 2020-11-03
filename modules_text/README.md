@@ -3536,3 +3536,214 @@ Now we are going to be working with the `beers` page since we already have the i
   `;
   ```
   We define the actual size of the `image` but in some cases that image will be stretch so, we use the `object-fit` with `contain` so the `image` will always fit the container regardless of its size. Sometimes some of the `images` will not show up and only will be the name of the `image` so will need to give the size of the letters; along to the center and us `grid`.
+
+## Module 8: Page and filtering
+
+On this module we will be working with `pagination` so instead of bring all the information from `sanity` and just displaying all the data; we will have some number items(not all of then) and can move between the number of different items that we will bring from `sanity`
+
+### Query and displaying slicemaster data
+
+Now we will use the `slicemaster` page to add the `pagination`. So bellow is the steps to build the page:
+
+- First; go to the `slicemaster.js` file on the `pages` directory
+- Export `graphql` from `gatsby`
+  `import graphql from 'gatsby';`
+- Now bellow the `SlicemastersPage` component; export a constant call `query` that will store the `graphQL` query
+  ```js
+  export const query = graphql`
+    query {}
+  `;
+  ```
+- Now `query` for the `persons`(remember thant on the `schema` in `sanity` we call `person` instead of `slicemaster`) and call it `slicemasters` that bring the `name`; `id`, `slug: {current}`; `description` and `image`
+  ```js
+  export const query = graphql`
+    query {
+      slicemasters: allSanityPerson {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          description
+          image {
+            asset {
+              fluid(maxWidth: 410) {
+                ...GatsbySanityImageFluid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+- Now we need to know the actual `count` of items that are in the `query` for the `pagination`. So use the `totalCount` before `slicemasters`
+  ```js
+  export const query = graphql`
+    query {
+      slicemasters: allSanityPerson {
+        totalCount
+        nodes {...}
+      }
+    }
+  `;
+  ```
+- Go to the `SlicemastersPage` component and call the `data` prop then extract the `nodes` on a constant call `slicemasters`
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (..);
+  }
+  ```
+- Remove all content of the return statement
+- Now loop throw every `slicemaster` with the `map` function
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => ()}
+        </div>
+      </>
+    );
+  }
+  ```
+- Import the `Link` component from `gatsby`
+  `import { graphql, Link } from 'gatsby';`
+- Inside of the `map` add another `div`(remember to add the `key` property to the `div`) with a `Link` to `/slicemaster/person_slug` and inside of it add a `h2` tag with the `person` name(put a class name call `mark` in the `h2`)
+
+```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemaster/${person.slug.current}`}>
+                <h2>
+                  <span className="mark">{person.name}</span>
+                </h2>
+              </Link>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+```
+
+- Import `Img` from `gatsby-image`
+  `import Img from 'gatsby-image';`
+- Bellow the `Link` component add the `image`
+
+```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemaster/${person.slug.current}`}>
+                ...
+              </Link>
+              <Img fluid={person.image.asset.fluid} />
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+```
+
+- Bellow of the `image` add a `p` that with the class name `description` and inside add the `description` of the `person` object
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemaster/${person.slug.current}`}>
+                ...
+              </Link>
+              <Img fluid={person.image.asset.fluid} />
+              <p className="description">{person.description}</p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `SlicemasterGrid` that will be equal to the `styled.div`
+  ```js
+  const SlicemasterGrid = styled.div``;
+  ```
+- Add the following style to `SlicemasterGrid`
+  ```js
+  const SlicemasterGrid = styled.div`
+    display: grid;
+    grid-gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  `;
+  ```
+  This will create columns for the `slicemasters`
+- Replace the `div` above the `map` function with `SlicemasterGrid`
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <SlicemasterStyles>
+          {slicemasters.map((person) => (...)}
+        </SlicemasterStyles>
+      </>
+    );
+  }
+  ```
+- Now create a constant call `SlicemasterStyles` to styling each individual item
+  ```js
+  const SlicemasterStyles = styled.div``;
+  ```
+- Then add the following style:
+
+```js
+const SlicemasterStyles = styled.div`
+  a {
+    text-decoration: none;
+  }
+  .gatsby-image-wrapper {
+    height: 400px;
+  }
+  h2 {
+    transform: rotate(-2deg);
+    text-align: center;
+    font-size: 4rem;
+    margin-bottom: -2rem;
+    position: relative;
+    z-index: 2;
+  }
+  .description {
+    background: var(--yellow);
+    padding: 1rem;
+    margin: 2rem;
+    margin-top: -6rem;
+    z-index: 2;
+    position: relative;
+    transform: rotate(1deg);
+    text-align: center;
+  }
+`;
+```
+
+- First; we remove some style from the `anchor`
+- Since not all `images` have the same size we need to establish the same size value for all `images`. The `images` are wrap in a `div` this is why we use the `.gatsby-image-wrapper` class
+- Then we add styles for the title
+- Finally, add style for the description
