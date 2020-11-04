@@ -3747,3 +3747,99 @@ const SlicemasterStyles = styled.div`
 - Since not all `images` have the same size we need to establish the same size value for all `images`. The `images` are wrap in a `div` this is why we use the `.gatsby-image-wrapper` class
 - Then we add styles for the title
 - Finally, add style for the description
+
+### Paginating data in Gatsby
+
+At this moment we have the `slicemaster` page with the `sanity` data on it so we can begin to work on the `pagination` on the page that will allow us to show a number of `slicemaster` items that we define.
+
+- First; go to your `.env` file and add the following environment variable that will allow us to define the number of items per page; in this case four
+  `GATSBY_PAGE_SIZE=4`
+  In order to `gatsby` recognize the environment variable you need to use the `GATSBY` prefix(Before we did one without this prefix but to use it we need to use an external package like `dotenv`). Remember that if you do this way it will be exposed in your frontend
+- Go to the `gatsby-node` file and create a `async` function call `turnSlicemasterIntoPages` that recive an object with the `graphQL` and `action` objects
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {}
+  ```
+  We will create pages for each page of the `pagination` so if we got 10 items and we want 2 items per page; we will have 5 pages of 2 items
+- Use the `turnSlicemasterIntoPages` in the `createPages` function
+
+```js
+export async function createPages(params) {
+  await Promise.all([
+    turnPizzasIntoPages(params),
+    turnToppingsIntoPages(params),
+    turnSlicemasterIntoPages(params),
+  ]);
+}
+```
+
+- Now we need to `query` all the `slicemaster` on the `turnSlicemasterIntoPages`
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`
+      query {
+        slicemaster: allSanityPerson {
+          totalCount
+          nodes {
+            name
+            id
+            slug {
+              current
+            }
+          }
+        }
+      }
+    `);
+  }
+  ```
+- Then we need to figure out how many pages there are based on how many `slicemaster` there are and how many per page we want. To create a variable that store the `page` size that we defined before(No matter that you put a number the environment variable will be return as a `string` and you need to convert it again to a number if you need)
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+  }
+  ```
+- Then we calculate the items per `page` using the total size of items that we have divided by the `page` size but some time the division will be decimal like `9/2 = 4.5` so we will have `4` and half items to store but such thing call half of `page` doesn't exist so we use the `ceil` function to round the number to `5` and create the `5` pages(Remember that we add the total count of the slicemasters as part of the `query`)
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+  }
+  ```
+- Now we need to create a loop that create a page depending how many `pages` we calculated before. We are going to use the `from` method of that depending a property with a numeric value will return an `array` with items equal to the value that you sent then we need to loop throw it
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+    Array.from({ length: pageCount }).forEach((_, i) => {}
+  }
+  ```
+  We put `_` because we need the `index` but not the other value
+- We need to create each page using the `actions` object
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+    Array.from({ length: pageCount }).forEach((_, i) => {
+      actions.createPage({
+        path: `/slicemaster/${i + 1}`,
+        component: path.resolve('./src/pages/slicemaster.js'),
+        context: {
+          skip: i * pageSize,
+          currentPage: i + 1,
+          pageSize,
+        },
+      });
+    }
+  }
+  ```
+  - `path`: The path will be `slicemaster/number_of_page`
+  - `component`: We use the same `slicemater` page component
+  - `context`: We will send the amount of the people that should be `skip` for example if we are on `page` 2 you need 4 `slicemaster` but need to `skip` the first 4 also we send the current `page` that we are and the `page` size
+- Now restart your local server
+- On your browser go to the `slicemaster` page
+- You should have the same result as before
+- Go to the `/slicemaster/2`
+- You should see the same result as the `slicemater` page that you see before(We still miss the filter for the data on each page)
