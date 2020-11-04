@@ -80,14 +80,14 @@ The `pages` on `gatsby` can be dynamically generated (more on this later) or can
   beers.js  ======>  BeersPage
   order.js  ======>  OrderPage
   pizzas.js ======>  PizzasPage
-  slicemaster.js => SlicemastersPage
+  slicemasters.js => SlicemastersPage
   ```
 - Test each new page on your browser
   ```
   - http://localhost:8000/beers
   - http://localhost:8000/order
   - http://localhost:8000/pizzas
-  - http://localhost:8000/slicemaster
+  - http://localhost:8000/slicemasters
   ```
 - You should see each custom message that you use on each function
 
@@ -137,16 +137,16 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
     );
   }
   ```
-- Now go to the `slicemaster.js` file in the` pages` directory
+- Now go to the `slicemasters.js` file in the` pages` directory
 - Import the `Nav` component:`import Nav from '../ components / Nav';`
 - Use the `Nav` component inside of the` div` in the `return` statement
 - On your console go to the `gatsby` directory and run your local server using:` npm start`
-- Go to the [slidemaster page] (http: // localhost: 8000 / slicemaster)
+- Go to the [slidemasters page] (http://localhost:8000/slicemasters)
 - You should see 2 links above
 - Click on the `Home` link
 - You should be redirected to the `Home` page
-- Now go to the `index.js` and` beers` page and add the `Nav` component like we did on the` slicemaster` page
-- Now you can see that every time you click on a link the page reload and change it content and for 1 second the content desapear; to fix this we will use some of the function that `Gatsby` have in this case the` Link` component. Go to the `Nav` component and import the` Link` component from `gastby`
+- Now go to the `index.js` and` beers` page and add the `Nav` component like we did on the` slicemasters` page
+- Now you can see that every time you click on a link the page reload and change it content and for 1 second the content disappear; to fix this we will use some of the function that `Gatsby` have in this case the` Link` component. Go to the `Nav` component and import the` Link` component from `gastby`
   `import {Link} from 'gatsby';`
 - Update the `anchors` to use the` Link` component
   ```js
@@ -181,7 +181,7 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
           </li>
           <li>
             <button type = "button" onClick = {goToSlicematers}>
-              Click me to see slicemaster after 2 seconds
+              Click me to see slicemasters after 2 seconds
             </button>
         </li>
         </ul>
@@ -202,7 +202,7 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
   function goToSlicematers() {
     setTimeout(() => {
       console.log("Go to slicers !!!");
-      navigate("/ slicemaster", { replace: true });
+      navigate("/slicemasters", { replace: true });
     }, 2000);
   }
   ```
@@ -223,10 +223,10 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
           <Link to="/"> Logo </Link>
         </li>
         <li>
-          <Link to="/ slicemaster"> Slicemaster </Link>
+          <Link to="/slicemasters"> Slicemasters </Link>
         </li>
         <li>
-          <Link to="/ order"> Order Ahead! </Link>
+          <Link to="/order"> Order Ahead! </Link>
         </li>
       </ul>
     </nav>
@@ -1059,7 +1059,7 @@ export default createSchema({
 });
 ```
 
-Finally, go to your browser and add a `slicemaster`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
+Finally, go to your browser and add a `slicemasters`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
 
 ### Custom CMS inputs in Sanity
 
@@ -3541,11 +3541,11 @@ Now we are going to be working with the `beers` page since we already have the i
 
 On this module we will be working with `pagination` so instead of bring all the information from `sanity` and just displaying all the data; we will have some number items(not all of then) and can move between the number of different items that we will bring from `sanity`
 
-### Query and displaying slicemaster data
+### Query and displaying slicemasters data
 
-Now we will use the `slicemaster` page to add the `pagination`. So bellow is the steps to build the page:
+Now we will use the `slicemasters` page to add the `pagination`. So bellow is the steps to build the page:
 
-- First; go to the `slicemaster.js` file on the `pages` directory
+- First; go to the `slicemasters.js` file on the `pages` directory
 - Export `graphql` from `gatsby`
   `import graphql from 'gatsby';`
 - Now bellow the `SlicemastersPage` component; export a constant call `query` that will store the `graphQL` query
@@ -3554,7 +3554,7 @@ Now we will use the `slicemaster` page to add the `pagination`. So bellow is the
     query {}
   `;
   ```
-- Now `query` for the `persons`(remember thant on the `schema` in `sanity` we call `person` instead of `slicemaster`) and call it `slicemasters` that bring the `name`; `id`, `slug: {current}`; `description` and `image`
+- Now `query` for the `persons`(remember thant on the `schema` in `sanity` we call `person` instead of `slicemasters`) and call it `slicemasters` that bring the `name`; `id`, `slug: {current}`; `description` and `image`
   ```js
   export const query = graphql`
     query {
@@ -3622,7 +3622,7 @@ Now we will use the `slicemaster` page to add the `pagination`. So bellow is the
         <div>
           {slicemasters.map((person) => (
             <div key={person.id}>
-              <Link to={`/slicemaster/${person.slug.current}`}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
                 <h2>
                   <span className="mark">{person.name}</span>
                 </h2>
@@ -3647,7 +3647,7 @@ Now we will use the `slicemaster` page to add the `pagination`. So bellow is the
         <div>
           {slicemasters.map((person) => (
             <div key={person.id}>
-              <Link to={`/slicemaster/${person.slug.current}`}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
                 ...
               </Link>
               <Img fluid={person.image.asset.fluid} />
@@ -3668,7 +3668,7 @@ Now we will use the `slicemaster` page to add the `pagination`. So bellow is the
         <div>
           {slicemasters.map((person) => (
             <div key={person.id}>
-              <Link to={`/slicemaster/${person.slug.current}`}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
                 ...
               </Link>
               <Img fluid={person.image.asset.fluid} />
@@ -3750,10 +3750,10 @@ const SlicemasterStyles = styled.div`
 
 ### Paginating data in Gatsby
 
-At this moment we have the `slicemaster` page with the `sanity` data on it so we can begin to work on the `pagination` on the page that will allow us to show a number of `slicemaster` items that we define.
+At this moment we have the `slicemasters` page with the `sanity` data on it so we can begin to work on the `pagination` on the page that will allow us to show a number of `slicemasters` items that we define.
 
-- First; go to your `.env` file and add the following environment variable that will allow us to define the number of items per page; in this case four
-  `GATSBY_PAGE_SIZE=4`
+- First; go to your `.env` file and add the following environment variable that will allow us to define the number of items per page; in this case two
+  `GATSBY_PAGE_SIZE=2`
   In order to `gatsby` recognize the environment variable you need to use the `GATSBY` prefix(Before we did one without this prefix but to use it we need to use an external package like `dotenv`). Remember that if you do this way it will be exposed in your frontend
 - Go to the `gatsby-node` file and create a `async` function call `turnSlicemasterIntoPages` that recive an object with the `graphQL` and `action` objects
   ```js
@@ -3772,7 +3772,7 @@ export async function createPages(params) {
 }
 ```
 
-- Now we need to `query` all the `slicemaster` on the `turnSlicemasterIntoPages`
+- Now we need to `query` all the `slicemasters` on the `turnSlicemasterIntoPages`
   ```js
   export async function turnSlicemasterIntoPages({ graphql, actions }) {
     const { data } = await graphql(`
@@ -3791,7 +3791,7 @@ export async function createPages(params) {
     `);
   }
   ```
-- Then we need to figure out how many pages there are based on how many `slicemaster` there are and how many per page we want. To create a variable that store the `page` size that we defined before(No matter that you put a number the environment variable will be return as a `string` and you need to convert it again to a number if you need)
+- Then we need to figure out how many pages there are based on how many `slicemasters` there are and how many per page we want. To create a variable that store the `page` size that we defined before(No matter that you put a number the environment variable will be return as a `string` and you need to convert it again to a number if you need)
   ```js
   export async function turnSlicemasterIntoPages({ graphql, actions }) {
     const { data } = await graphql(`...`);
@@ -3824,8 +3824,8 @@ export async function createPages(params) {
     const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
     Array.from({ length: pageCount }).forEach((_, i) => {
       actions.createPage({
-        path: `/slicemaster/${i + 1}`,
-        component: path.resolve('./src/pages/slicemaster.js'),
+        path: `/slicemasters/${i + 1}`,
+        component: path.resolve('./src/pages/slicemasters.js'),
         context: {
           skip: i * pageSize,
           currentPage: i + 1,
@@ -3835,11 +3835,35 @@ export async function createPages(params) {
     }
   }
   ```
-  - `path`: The path will be `slicemaster/number_of_page`
-  - `component`: We use the same `slicemater` page component
-  - `context`: We will send the amount of the people that should be `skip` for example if we are on `page` 2 you need 4 `slicemaster` but need to `skip` the first 4 also we send the current `page` that we are and the `page` size
+  - `path`: The path will be `slicemasters/number_of_page`
+  - `component`: We use the same `slicemasters` page component
+  - `context`: We will send the amount of the people that should be `skip` for example if we are on `page` 2 you need 4 `slicemasters` but need to `skip` the first 4 also we send the current `page` that we are and the `page` size
 - Now restart your local server
-- On your browser go to the `slicemaster` page
+- On your browser go to the `slicemasters` page
 - You should have the same result as before
-- Go to the `/slicemaster/2`
-- You should see the same result as the `slicemater` page that you see before(We still miss the filter for the data on each page)
+- Go to the `/slicemasters/2`
+- You should see the same result as the `slicemasters` page that you see before(We still miss the filter for the data on each page)
+
+### Filtering data depending on the pagination
+
+Now will working with the `query` of the `slicemasters` page so it can filter the data depending on the values that we send via the `context` that we defined before in the `gatsby-node` file
+
+- First; go to the `slicemasters` page component
+- Add the `skip` and the `pageSize` as varibles that the `query` will recive
+  ```js
+  export const query = graphql`
+    query($skip: Int = 0, $pageSize: Int = 2) {
+      slicemasters: allSanityPerson {...}
+  `;
+  ```
+  We will recive the `skip` variable that is an `integer` that have a default value of `0` and is not required also we recive the `pageSize` variable that is an `integer` that have a default value of two.
+- Then we use the `skip` function to let know `graphQL` which pieces of data we will show and the `limit` function to `limit` the items that we will show
+  ```js
+  export const query = graphql`
+    query($skip: Int = 0, $pageSize: Int = 2) {
+      slicemasters: allSanityPerson(limit: $pageSize, skip: $skip) {...}
+  `;
+  ```
+- Now start your local server
+- Go to the `slicemasters` page
+- You should see a limited number of persons
