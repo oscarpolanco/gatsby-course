@@ -34,6 +34,7 @@
   ```bash
   SANITY_TOKEN = your_sanity_token
   SANITY_PROJECT_ID = 'your_sanity_project_id'
+  GATSBY_PAGE_SIZE=2
   ```
 - Install all dependencies using: `npm install`
 - Run your local server using: `npm start`

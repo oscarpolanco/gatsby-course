@@ -80,14 +80,14 @@ The `pages` on `gatsby` can be dynamically generated (more on this later) or can
   beers.js  ======>  BeersPage
   order.js  ======>  OrderPage
   pizzas.js ======>  PizzasPage
-  slicemaster.js => SlicemastersPage
+  slicemasters.js => SlicemastersPage
   ```
 - Test each new page on your browser
   ```
   - http://localhost:8000/beers
   - http://localhost:8000/order
   - http://localhost:8000/pizzas
-  - http://localhost:8000/slicemaster
+  - http://localhost:8000/slicemasters
   ```
 - You should see each custom message that you use on each function
 
@@ -137,16 +137,16 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
     );
   }
   ```
-- Now go to the `slicemaster.js` file in the` pages` directory
+- Now go to the `slicemasters.js` file in the` pages` directory
 - Import the `Nav` component:`import Nav from '../ components / Nav';`
 - Use the `Nav` component inside of the` div` in the `return` statement
 - On your console go to the `gatsby` directory and run your local server using:` npm start`
-- Go to the [slidemaster page] (http: // localhost: 8000 / slicemaster)
+- Go to the [slidemasters page] (http://localhost:8000/slicemasters)
 - You should see 2 links above
 - Click on the `Home` link
 - You should be redirected to the `Home` page
-- Now go to the `index.js` and` beers` page and add the `Nav` component like we did on the` slicemaster` page
-- Now you can see that every time you click on a link the page reload and change it content and for 1 second the content desapear; to fix this we will use some of the function that `Gatsby` have in this case the` Link` component. Go to the `Nav` component and import the` Link` component from `gastby`
+- Now go to the `index.js` and` beers` page and add the `Nav` component like we did on the` slicemasters` page
+- Now you can see that every time you click on a link the page reload and change it content and for 1 second the content disappear; to fix this we will use some of the function that `Gatsby` have in this case the` Link` component. Go to the `Nav` component and import the` Link` component from `gastby`
   `import {Link} from 'gatsby';`
 - Update the `anchors` to use the` Link` component
   ```js
@@ -181,7 +181,7 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
           </li>
           <li>
             <button type = "button" onClick = {goToSlicematers}>
-              Click me to see slicemaster after 2 seconds
+              Click me to see slicemasters after 2 seconds
             </button>
         </li>
         </ul>
@@ -202,7 +202,7 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
   function goToSlicematers() {
     setTimeout(() => {
       console.log("Go to slicers !!!");
-      navigate("/ slicemaster", { replace: true });
+      navigate("/slicemasters", { replace: true });
     }, 2000);
   }
   ```
@@ -223,10 +223,10 @@ Like we mention before `gatsby` has its own routing strategy so we don't need to
           <Link to="/"> Logo </Link>
         </li>
         <li>
-          <Link to="/ slicemaster"> Slicemaster </Link>
+          <Link to="/slicemasters"> Slicemasters </Link>
         </li>
         <li>
-          <Link to="/ order"> Order Ahead! </Link>
+          <Link to="/order"> Order Ahead! </Link>
         </li>
       </ul>
     </nav>
@@ -1059,7 +1059,7 @@ export default createSchema({
 });
 ```
 
-Finally, go to your browser and add a `slicemaster`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
+Finally, go to your browser and add a `slicemasters`; you can use the `data` on the `sample-data` directory. In the `text-data.md` are the user's information and on the `nice-pizza-pics` directory have some people images.
 
 ### Custom CMS inputs in Sanity
 
@@ -3536,3 +3536,593 @@ Now we are going to be working with the `beers` page since we already have the i
   `;
   ```
   We define the actual size of the `image` but in some cases that image will be stretch so, we use the `object-fit` with `contain` so the `image` will always fit the container regardless of its size. Sometimes some of the `images` will not show up and only will be the name of the `image` so will need to give the size of the letters; along to the center and us `grid`.
+
+## Module 8: Page and filtering
+
+On this module we will be working with `pagination` so instead of bring all the information from `sanity` and just displaying all the data; we will have some number items(not all of then) and can move between the number of different items that we will bring from `sanity`
+
+### Query and displaying slicemasters data
+
+Now we will use the `slicemasters` page to add the `pagination`. So bellow is the steps to build the page:
+
+- First; go to the `slicemasters.js` file on the `pages` directory
+- Export `graphql` from `gatsby`
+  `import graphql from 'gatsby';`
+- Now bellow the `SlicemastersPage` component; export a constant call `query` that will store the `graphQL` query
+  ```js
+  export const query = graphql`
+    query {}
+  `;
+  ```
+- Now `query` for the `persons`(remember thant on the `schema` in `sanity` we call `person` instead of `slicemasters`) and call it `slicemasters` that bring the `name`; `id`, `slug: {current}`; `description` and `image`
+  ```js
+  export const query = graphql`
+    query {
+      slicemasters: allSanityPerson {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          description
+          image {
+            asset {
+              fluid(maxWidth: 410) {
+                ...GatsbySanityImageFluid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+- Now we need to know the actual `count` of items that are in the `query` for the `pagination`. So use the `totalCount` before `slicemasters`
+  ```js
+  export const query = graphql`
+    query {
+      slicemasters: allSanityPerson {
+        totalCount
+        nodes {...}
+      }
+    }
+  `;
+  ```
+- Go to the `SlicemastersPage` component and call the `data` prop then extract the `nodes` on a constant call `slicemasters`
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (..);
+  }
+  ```
+- Remove all content of the return statement
+- Now loop throw every `slicemaster` with the `map` function
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => ()}
+        </div>
+      </>
+    );
+  }
+  ```
+- Import the `Link` component from `gatsby`
+  `import { graphql, Link } from 'gatsby';`
+- Inside of the `map` add another `div`(remember to add the `key` property to the `div`) with a `Link` to `/slicemaster/person_slug` and inside of it add a `h2` tag with the `person` name(put a class name call `mark` in the `h2`)
+
+```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
+                <h2>
+                  <span className="mark">{person.name}</span>
+                </h2>
+              </Link>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+```
+
+- Import `Img` from `gatsby-image`
+  `import Img from 'gatsby-image';`
+- Bellow the `Link` component add the `image`
+
+```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
+                ...
+              </Link>
+              <Img fluid={person.image.asset.fluid} />
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+```
+
+- Bellow of the `image` add a `p` that with the class name `description` and inside add the `description` of the `person` object
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <div>
+          {slicemasters.map((person) => (
+            <div key={person.id}>
+              <Link to={`/slicemasters/${person.slug.current}`}>
+                ...
+              </Link>
+              <Img fluid={person.image.asset.fluid} />
+              <p className="description">{person.description}</p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+  ```
+- Now import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `SlicemasterGrid` that will be equal to the `styled.div`
+  ```js
+  const SlicemasterGrid = styled.div``;
+  ```
+- Add the following style to `SlicemasterGrid`
+  ```js
+  const SlicemasterGrid = styled.div`
+    display: grid;
+    grid-gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  `;
+  ```
+  This will create columns for the `slicemasters`
+- Replace the `div` above the `map` function with `SlicemasterGrid`
+  ```js
+  export default function SlicemastersPage({ data }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <SlicemasterStyles>
+          {slicemasters.map((person) => (...)}
+        </SlicemasterStyles>
+      </>
+    );
+  }
+  ```
+- Now create a constant call `SlicemasterStyles` to styling each individual item
+  ```js
+  const SlicemasterStyles = styled.div``;
+  ```
+- Then add the following style:
+
+```js
+const SlicemasterStyles = styled.div`
+  a {
+    text-decoration: none;
+  }
+  .gatsby-image-wrapper {
+    height: 400px;
+  }
+  h2 {
+    transform: rotate(-2deg);
+    text-align: center;
+    font-size: 4rem;
+    margin-bottom: -2rem;
+    position: relative;
+    z-index: 2;
+  }
+  .description {
+    background: var(--yellow);
+    padding: 1rem;
+    margin: 2rem;
+    margin-top: -6rem;
+    z-index: 2;
+    position: relative;
+    transform: rotate(1deg);
+    text-align: center;
+  }
+`;
+```
+
+- First; we remove some style from the `anchor`
+- Since not all `images` have the same size we need to establish the same size value for all `images`. The `images` are wrap in a `div` this is why we use the `.gatsby-image-wrapper` class
+- Then we add styles for the title
+- Finally, add style for the description
+
+### Paginating data in Gatsby
+
+At this moment we have the `slicemasters` page with the `sanity` data on it so we can begin to work on the `pagination` on the page that will allow us to show a number of `slicemasters` items that we define.
+
+- First; go to your `.env` file and add the following environment variable that will allow us to define the number of items per page; in this case two
+  `GATSBY_PAGE_SIZE=2`
+  In order to `gatsby` recognize the environment variable you need to use the `GATSBY` prefix(Before we did one without this prefix but to use it we need to use an external package like `dotenv`). Remember that if you do this way it will be exposed in your frontend
+- Go to the `gatsby-node` file and create a `async` function call `turnSlicemasterIntoPages` that recive an object with the `graphQL` and `action` objects
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {}
+  ```
+  We will create pages for each page of the `pagination` so if we got 10 items and we want 2 items per page; we will have 5 pages of 2 items
+- Use the `turnSlicemasterIntoPages` in the `createPages` function
+
+```js
+export async function createPages(params) {
+  await Promise.all([
+    turnPizzasIntoPages(params),
+    turnToppingsIntoPages(params),
+    turnSlicemasterIntoPages(params),
+  ]);
+}
+```
+
+- Now we need to `query` all the `slicemasters` on the `turnSlicemasterIntoPages`
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`
+      query {
+        slicemaster: allSanityPerson {
+          totalCount
+          nodes {
+            name
+            id
+            slug {
+              current
+            }
+          }
+        }
+      }
+    `);
+  }
+  ```
+- Then we need to figure out how many pages there are based on how many `slicemasters` there are and how many per page we want. To create a variable that store the `page` size that we defined before(No matter that you put a number the environment variable will be return as a `string` and you need to convert it again to a number if you need)
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+  }
+  ```
+- Then we calculate the items per `page` using the total size of items that we have divided by the `page` size but some time the division will be decimal like `9/2 = 4.5` so we will have `4` and half items to store but such thing call half of `page` doesn't exist so we use the `ceil` function to round the number to `5` and create the `5` pages(Remember that we add the total count of the slicemasters as part of the `query`)
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+  }
+  ```
+- Now we need to create a loop that create a page depending how many `pages` we calculated before. We are going to use the `from` method of that depending a property with a numeric value will return an `array` with items equal to the value that you sent then we need to loop throw it
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+    Array.from({ length: pageCount }).forEach((_, i) => {}
+  }
+  ```
+  We put `_` because we need the `index` but not the other value
+- We need to create each page using the `actions` object
+  ```js
+  export async function turnSlicemasterIntoPages({ graphql, actions }) {
+    const { data } = await graphql(`...`);
+    const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
+    const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+    Array.from({ length: pageCount }).forEach((_, i) => {
+      actions.createPage({
+        path: `/slicemasters/${i + 1}`,
+        component: path.resolve('./src/pages/slicemasters.js'),
+        context: {
+          skip: i * pageSize,
+          currentPage: i + 1,
+          pageSize,
+        },
+      });
+    }
+  }
+  ```
+  - `path`: The path will be `slicemasters/number_of_page`
+  - `component`: We use the same `slicemasters` page component
+  - `context`: We will send the amount of the people that should be `skip` for example if we are on `page` 2 you need 4 `slicemasters` but need to `skip` the first 4 also we send the current `page` that we are and the `page` size
+- Now restart your local server
+- On your browser go to the `slicemasters` page
+- You should have the same result as before
+- Go to the `/slicemasters/2`
+- You should see the same result as the `slicemasters` page that you see before(We still miss the filter for the data on each page)
+
+### Filtering data depending on the pagination
+
+Now will working with the `query` of the `slicemasters` page so it can filter the data depending on the values that we send via the `context` that we defined before in the `gatsby-node` file
+
+- First; go to the `slicemasters` page component
+- Add the `skip` and the `pageSize` as varibles that the `query` will recive
+  ```js
+  export const query = graphql`
+    query($skip: Int = 0, $pageSize: Int = 2) {
+      slicemasters: allSanityPerson {...}
+  `;
+  ```
+  We will recive the `skip` variable that is an `integer` that have a default value of `0` and is not required also we recive the `pageSize` variable that is an `integer` that have a default value of two.
+- Then we use the `skip` function to let know `graphQL` which pieces of data we will show and the `limit` function to `limit` the items that we will show
+  ```js
+  export const query = graphql`
+    query($skip: Int = 0, $pageSize: Int = 2) {
+      slicemasters: allSanityPerson(limit: $pageSize, skip: $skip) {...}
+  `;
+  ```
+- Now start your local server
+- Go to the `slicemasters` page
+- You should see a limited number of persons
+
+### Creating a reusable pagination component
+
+Now that we create the pages for each chunk of `slicemasters` we can add a `pagination` component that will help users to navigate easily between those pages.
+
+- First; on the `gatsby/component` directory create a new file call `Pagination.js`
+- Import `React` from `react` in the newly created file
+  `import React from 'react';`
+- Export a function call `Pagination` with some content
+  ```js
+  export default function Pagination() {
+    return <p>Pagination</p>;
+  }
+  ```
+- Go to the `slicemasters` page component and import the `Pagination` component
+  `import Pagination from '../components/Pagination';`
+- Now use the `Pagination` component before `SlicemasterGrid`
+  ```js
+  export default function SlicemastersPage({ data, pageContext }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <Pagination />
+        <SlicemasterGrid>...</SlicemasterGrid>
+    );
+  }
+  ```
+- Go back to the `Pagination` component and add the following props on the `Pagination` component
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    return (
+      <p>Pagination</p>
+    );
+  }
+  ```
+- Delete the `p` and import `Link` from `gatsby`
+  `import { Link } from 'gatsby';`
+- Make another constant call `prevPage` that will be the `currentPage - 1` and a another one call `nextPage` that will be the `currentPage + 1`
+  ```js
+  const prevPage = currentPage - 1;
+  const nextPage = currentPage + 1;
+  ```
+- Now we are going to add the `Prev` and `Next` links that will help us to move throw the pages
+  ```js
+    export default function Pagination({pageSize, totalCount, currentPage, base) {
+      const prevPage = currentPage - 1;
+      const nextPage = currentPage + 1;
+      return (
+        <>
+          <Link to={`${base}/${prevPage}`}>
+            ← Prev
+          </Link>
+          <Link to={`${base}/${nextPage}`}>
+            Next →
+          </Link>
+        </>
+      );
+    }
+  ```
+  We use the `base` prop so we can reuse the `Pagination` component for different components not just the `slicemasters` page component
+- Then pass the props to the `Pagination` component from the `slicemasters` component
+  ```js
+  export default function SlicemastersPage({ data, pageContext }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <Pagination
+          pageSize={parseInt(process.env.GATSBY_PAGE_SIZE)}
+          totalCount={data.slicemasters.totalCount}
+          currentPage={pageContext.currentPage || 1}
+          skip={pageContext.skip}
+          base="/slicemasters"
+        />
+        <SlicemasterGrid>...</SlicemasterGrid>
+    );
+  }
+  ```
+  When we are on the first page the `currentPage` will no exists
+- Now create another 2 constant to know that we have a previews page or a next page
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        <Link to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+- Now add the `disabled` property using the `hasNextPage` for the `Next` link and the `hasPrevPage` for the `Prev` link
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+  This will add the `disabled` property to the links when we got to the first or the last `page` but this by itself doesn't do the disable process that will be address later on this module
+- Now we need a link that for each page between the `Prev` and `Next` links
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link to={`${base}/${i > 0 ? i + 1 : ''}`}>
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+- At this moment we need to add some style on the `pagination` so import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `PaginationStyles` before the `Pagination` component
+  ```js
+  const PaginationStyles = styled.div``;
+  ```
+- Now add the following style:
+  ```js
+  const PaginationStyles = styled.div`
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    border: 1px solid var(--grey);
+    margin: 2rem 0;
+    border-radius: 5px;
+    text-align: center;
+  `;
+  ```
+  Center all the items; then add a `border` on the container that will be a little round on the corners
+- Replace the `react` fragment with `PaginationStyles`
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <PaginationStyles>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link to={`${base}/${i > 0 ? i + 1 : ''}`}>
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </PaginationStyles>
+    );
+  }
+  ```
+- Now go back to `PaginationStyles` and add the following
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+    }
+  `;
+  ```
+  Target each `flex` item that is a direct descendent and add some space in it surrounding; distribute the space of those items; a little border to the right and eliminate some style from the links
+- Then add the following:
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+      &[aria-current],
+      &.current {
+        color: var(--red);
+      }
+    }
+  `;
+  ```
+  On the `flex` items that are direct descendant and have an `aria-current` attribute or a class called, `current` will add red color to it. This will highlight the link that represents the current page but if you click on the `slicemasters` menu link you will be redirected to the `slicemasters/` and the current link will not highlight
+- To fix the highlight issue we add a `current` class on the link that represents the first page
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    ...
+    return (
+      <PaginationStyles>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link
+            className={currentPage === 1 && i === 0 ? 'current' : ''}
+            to={`${base}/${i > 0 ? i + 1 : ''}`}
+          >
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </PaginationStyles>
+    );
+  }
+  ```
+- Finally we `disable` the links that have a `disabled` property on it and put a `grey` color
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+      &[aria-current],
+      &.current {
+        color: var(--red);
+      }
+      &[disabled] {
+        pointer-events: none;
+        color: var(--grey);
+      }
+    }
+  `;
+  ```
+- Now start your local server
+- Go to the `slicemasters` page and use the `pagination`
+- You should see the current page number highlight on the `pagination` and doesn't allow you to get beyond the first or last pages
