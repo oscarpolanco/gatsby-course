@@ -3867,3 +3867,262 @@ Now will working with the `query` of the `slicemasters` page so it can filter th
 - Now start your local server
 - Go to the `slicemasters` page
 - You should see a limited number of persons
+
+### Creating a reusable pagination component
+
+Now that we create the pages for each chunk of `slicemasters` we can add a `pagination` component that will help users to navigate easily between those pages.
+
+- First; on the `gatsby/component` directory create a new file call `Pagination.js`
+- Import `React` from `react` in the newly created file
+  `import React from 'react';`
+- Export a function call `Pagination` with some content
+  ```js
+  export default function Pagination() {
+    return <p>Pagination</p>;
+  }
+  ```
+- Go to the `slicemasters` page component and import the `Pagination` component
+  `import Pagination from '../components/Pagination';`
+- Now use the `Pagination` component before `SlicemasterGrid`
+  ```js
+  export default function SlicemastersPage({ data, pageContext }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <Pagination />
+        <SlicemasterGrid>...</SlicemasterGrid>
+    );
+  }
+  ```
+- Go back to the `Pagination` component and add the following props on the `Pagination` component
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    return (
+      <p>Pagination</p>
+    );
+  }
+  ```
+- Delete the `p` and import `Link` from `gatsby`
+  `import { Link } from 'gatsby';`
+- Make another constant call `prevPage` that will be the `currentPage - 1` and a another one call `nextPage` that will be the `currentPage + 1`
+  ```js
+  const prevPage = currentPage - 1;
+  const nextPage = currentPage + 1;
+  ```
+- Now we are going to add the `Prev` and `Next` links that will help us to move throw the pages
+  ```js
+    export default function Pagination({pageSize, totalCount, currentPage, base) {
+      const prevPage = currentPage - 1;
+      const nextPage = currentPage + 1;
+      return (
+        <>
+          <Link to={`${base}/${prevPage}`}>
+            ← Prev
+          </Link>
+          <Link to={`${base}/${nextPage}`}>
+            Next →
+          </Link>
+        </>
+      );
+    }
+  ```
+  We use the `base` prop so we can reuse the `Pagination` component for different components not just the `slicemasters` page component
+- Then pass the props to the `Pagination` component from the `slicemasters` component
+  ```js
+  export default function SlicemastersPage({ data, pageContext }) {
+    const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <Pagination
+          pageSize={parseInt(process.env.GATSBY_PAGE_SIZE)}
+          totalCount={data.slicemasters.totalCount}
+          currentPage={pageContext.currentPage || 1}
+          skip={pageContext.skip}
+          base="/slicemasters"
+        />
+        <SlicemasterGrid>...</SlicemasterGrid>
+    );
+  }
+  ```
+  When we are on the first page the `currentPage` will no exists
+- Now create another 2 constant to know that we have a previews page or a next page
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        <Link to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+- Now add the `disabled` property using the `hasNextPage` for the `Next` link and the `hasPrevPage` for the `Prev` link
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+  This will add the `disabled` property to the links when we got to the first or the last `page` but this by itself doesn't do the disable process that will be address later on this module
+- Now we need a link that for each page between the `Prev` and `Next` links
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link to={`${base}/${i > 0 ? i + 1 : ''}`}>
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </>
+    );
+  }
+  ```
+- At this moment we need to add some style on the `pagination` so import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Create a constant call `PaginationStyles` before the `Pagination` component
+  ```js
+  const PaginationStyles = styled.div``;
+  ```
+- Now add the following style:
+  ```js
+  const PaginationStyles = styled.div`
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    border: 1px solid var(--grey);
+    margin: 2rem 0;
+    border-radius: 5px;
+    text-align: center;
+  `;
+  ```
+  Center all the items; then add a `border` on the container that will be a little round on the corners
+- Replace the `react` fragment with `PaginationStyles`
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    const prevPage = currentPage - 1;
+    const nextPage = currentPage + 1;
+    const hasNextPage = nextPage <= totalPages;
+    const hasPrevPage = prevPage >= 1;
+    return (
+      <PaginationStyles>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link to={`${base}/${i > 0 ? i + 1 : ''}`}>
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </PaginationStyles>
+    );
+  }
+  ```
+- Now go back to `PaginationStyles` and add the following
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+    }
+  `;
+  ```
+  Target each `flex` item that is a direct descendent and add some space in it surrounding; distribute the space of those items; a little border to the right and eliminate some style from the links
+- Then add the following:
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+      &[aria-current],
+      &.current {
+        color: var(--red);
+      }
+    }
+  `;
+  ```
+  On the `flex` items that are direct descendant and have an `aria-current` attribute or a class called, `current` will add red color to it. This will highlight the link that represents the current page but if you click on the `slicemasters` menu link you will be redirected to the `slicemasters/` and the current link will not highlight
+- To fix the highlight issue we add a `current` class on the link that represents the first page
+  ```js
+  export default function Pagination({pageSize, totalCount, currentPage, base) {
+    ...
+    return (
+      <PaginationStyles>
+        <Link disabled={!hasPrevPage} to={`${base}/${prevPage}`}>
+          ← Prev
+        </Link>
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <Link
+            className={currentPage === 1 && i === 0 ? 'current' : ''}
+            to={`${base}/${i > 0 ? i + 1 : ''}`}
+          >
+            {i + 1}
+          </Link>
+        ))}
+        <Link disabled={!hasNextPage} to={`${base}/${nextPage}`}>
+          Next →
+        </Link>
+      </PaginationStyles>
+    );
+  }
+  ```
+- Finally we `disable` the links that have a `disabled` property on it and put a `grey` color
+  ```js
+  const PaginationStyles = styled.div`
+    ... & > * {
+      padding: 1rem;
+      flex: 1;
+      border-radius: 1px solid var(--grey);
+      text-decoration: none;
+      &[aria-current],
+      &.current {
+        color: var(--red);
+      }
+      &[disabled] {
+        pointer-events: none;
+        color: var(--grey);
+      }
+    }
+  `;
+  ```
+- Now start your local server
+- Go to the `slicemasters` page and use the `pagination`
+- You should see the current page number highlight on the `pagination` and doesn't allow you to get beyond the first or last pages
