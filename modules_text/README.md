@@ -4126,3 +4126,66 @@ Now that we create the pages for each chunk of `slicemasters` we can add a `pagi
 - Now start your local server
 - Go to the `slicemasters` page and use the `pagination`
 - You should see the current page number highlight on the `pagination` and doesn't allow you to get beyond the first or last pages
+
+## Module #9: Custom Pages and SEO
+
+At this moment we can continue working with the `slicemasters` in this case the single pages for each `person`. This process is almost the same that the one covert on the previews section so we are not going to give a lot of new details here.
+
+- First; on your `template` directory create a new file call `Slicemaster.js`
+- Now go to the `gatsby-node` file and on the `turnSlicemasterIntoPages` function use the `createPages` function to create all pages for each `person`(Remember that we use the `slug` on the url)
+  ```js
+  data.slicemasters.nodes.forEach((slicemaster) => {
+    actions.createPage({
+      path: `slicemasters/${slicemaster.slug.current}`,
+      component: path.resolve("./src/templates/Slicemaster.js"),
+      context: {
+        slug: slicemaster.slug.current,
+      },
+    });
+  });
+  ```
+- Then go to the `SLicemaster.js` file on the `template` directory and import `react`; `graphql` and the `Img` component
+  ```js
+  import React from "react";
+  import { graphql } from "gatsby";
+  import Img from "gatsby-image";
+  ```
+- Now export a function call `SingleSlicemaster` and destructure the `data` value to get the `person` query
+  `export default function SingleSlicemaster({ data: { person } }) {}`
+- Bellow the `SingleSlicemaster` function export a `query` and call it `person` that bring a `sanityPerson` with it `name`; `id`; `description` and `image` with a `with` of `1000` and a `height` of `750`
+  ```js
+  export const query = graphql`
+    query($slug: String!) {
+      person: sanityPerson(slug: { current: { eq: $slug } }) {
+        name
+        id
+        description
+        image {
+          asset {
+            fluid(maxWidth: 1000, maxHeight: 750) {
+              ...GatsbySanityImageFluid
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+- Now go back to the `SingleSlicemaster` and use the data of the `query` with the following structure
+  ```js
+  export default function SingleSlicemaster({ data: { person } }) {
+    return (
+      <div className="center">
+        <Img fluid={person.image.asset.fluid} />
+        <h2>
+          <span className="mark">{person.name}</span>
+        </h2>
+        <p>{person.description}</p>
+      </div>
+    );
+  }
+  ```
+- Now start your local server
+- Go to the `slicemasters` page
+- Click on one of the `person` names
+- You should be redirected to the `person` page with all it information
