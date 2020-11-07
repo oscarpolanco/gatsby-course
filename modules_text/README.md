@@ -4126,3 +4126,480 @@ Now that we create the pages for each chunk of `slicemasters` we can add a `pagi
 - Now start your local server
 - Go to the `slicemasters` page and use the `pagination`
 - You should see the current page number highlight on the `pagination` and doesn't allow you to get beyond the first or last pages
+
+## Module #9: Custom Pages and SEO
+
+At this moment we can continue working with the `slicemasters` in this case the single pages for each `person`. This process is almost the same that the one covert on the previews section so we are not going to give a lot of new details here.
+
+- First; on your `template` directory create a new file call `Slicemaster.js`
+- Now go to the `gatsby-node` file and on the `turnSlicemasterIntoPages` function use the `createPages` function to create all pages for each `person`(Remember that we use the `slug` on the url)
+  ```js
+  data.slicemasters.nodes.forEach((slicemaster) => {
+    actions.createPage({
+      path: `slicemasters/${slicemaster.slug.current}`,
+      component: path.resolve("./src/templates/Slicemaster.js"),
+      context: {
+        slug: slicemaster.slug.current,
+      },
+    });
+  });
+  ```
+- Then go to the `SLicemaster.js` file on the `template` directory and import `react`; `graphql` and the `Img` component
+  ```js
+  import React from "react";
+  import { graphql } from "gatsby";
+  import Img from "gatsby-image";
+  ```
+- Now export a function call `SingleSlicemaster` and destructure the `data` value to get the `person` query
+  `export default function SingleSlicemaster({ data: { person } }) {}`
+- Bellow the `SingleSlicemaster` function export a `query` and call it `person` that bring a `sanityPerson` with it `name`; `id`; `description` and `image` with a `with` of `1000` and a `height` of `750`
+  ```js
+  export const query = graphql`
+    query($slug: String!) {
+      person: sanityPerson(slug: { current: { eq: $slug } }) {
+        name
+        id
+        description
+        image {
+          asset {
+            fluid(maxWidth: 1000, maxHeight: 750) {
+              ...GatsbySanityImageFluid
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+- Now go back to the `SingleSlicemaster` and use the data of the `query` with the following structure
+  ```js
+  export default function SingleSlicemaster({ data: { person } }) {
+    return (
+      <div className="center">
+        <Img fluid={person.image.asset.fluid} />
+        <h2>
+          <span className="mark">{person.name}</span>
+        </h2>
+        <p>{person.description}</p>
+      </div>
+    );
+  }
+  ```
+- Now start your local server
+- Go to the `slicemasters` page
+- Click on one of the `person` names
+- You should be redirected to the `person` page with all it information
+
+### Gatsby SEO and head tags
+
+Now we are going to be working with [SEO](https://developer.mozilla.org/en-US/docs/Glossary/SEO) and all `meta` tags that we need to put in the `head` of the application. Are you see our site and ask yourself what is the highest level that we can get on our page? The answer is the `Layout` component and you can see that we don't have any access to the `head` or `HTML` tag in there. To work with this we use a package call [react-helmet](https://www.npmjs.com/package/react-helmet) that will allow us to put tags on a place and transport them into our page `head`. When we use `react-helmet` in a component it will because of a `side effect` that is when we update something outside of the component itself. In our case, we going to use a custom component that uses `helmet` with some default values that we can override it if we need to. Here are the steps to work with `react-helmet`:
+
+- First; go to the `gatsby-config.js` file on the root of the `gatsby` directory
+- Add `gatsby-plugin-react-helmet` plugin on the `plugin` section
+  ```js
+  export default {
+    siteMetadata: {...},
+    plugins: [
+      'gatsby-plugin-react-helmet',
+      'gatsby-plugin-styled-components',
+      {...},
+    ],
+  };
+  ```
+  We need to add this `plugin` because when we get to server rendering or per building doesn't work as expected
+- Now on the `component` folder create a file called `SEO.js`
+- Inside of the newly create the file; import `react` and `Helmet`
+  ```js
+  import React from "react";
+  import { Helmet } from "react-helmet";
+  ```
+- Export a function call `SEO` that recive: `children`, `location`, `description`, `title`, `image`
+  `export default function SEO({ children, location, description, title, image }) {}`
+- Now inside of the `SEO` function return a `Helmet` tag
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    return <Helmet></Helmet>;
+  }
+  ```
+- Inside of the `Helmet` component put the following:
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    return (
+      <Helmet>
+        <html lang="en" />
+      </Helmet>
+    );
+  }
+  ```
+  We add this so the browser will know which language are our `hmtl`
+- `Helmet` can recive a `title` template that will allow use to override the value of the `title` tag in this case we will add the site name after each `title` that we send
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    return (
+      <Helmet titleTemplate={`%s - Slick Slices`}>
+        <html lang="en" />
+      </Helmet>
+    );
+  }
+  ```
+  You can see in the `attributes` that `react-helmet` add the `data-react-helmet` that have the `attribute` that you added as value
+- But we actually should not be hardcoding the name of the site in the `titleTemplate` because we actually have that information as a part of the configuration file so we can `query` that data. To `query` this data we will need an `static` query so first import `graphql` and `useStaticQuery` from `gatsby`
+  `import { graphql, useStaticQuery } from 'gatsby';`
+- Before the return statement do a `query` to `site` that get the `siteMetadata`: `title`; `description`; `twitter`
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`
+      query {
+        site {
+          siteMetadata {
+            title
+            description
+            twitter
+          }
+        }
+      }
+    `);
+
+    return (
+      <Helmet titleTemplate={`%s - Slick Slices`}>
+        <html lang="en" />
+      </Helmet>
+    );
+  }
+  ```
+
+- Now update the `titleTemplate` to use the `title` that you obtain from the `query`
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+      </Helmet>
+    );
+  }
+  ```
+
+- Now add a `tittle` tag and use the `title` of the props as it content
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+      </Helmet>
+    );
+  }
+  ```
+
+  Now you will have your custom title and will add the `titleTemplate` with it
+
+- Then we need to add our `fav` icon using a `link` that and will be an `SVG`. We can use the `fav` icon that is on the static folder
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </Helmet>
+    );
+  }
+  ```
+
+  By default, the browser search for `favicon.ico` and we have it on the `static` folder too; so that is why we already have an icon on our site
+
+- We will add a fallback for browsers that doesn't support `svg`
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" href="/favicon.io" />
+      </Helmet>
+    );
+  }
+  ```
+
+  Now we have 3 ways to have an icon in our page depending the browser
+
+- Now we are going to add some `meta` tags
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" href="/favicon.io" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charSet="utf-8" />
+        <meta name="description" content={site.siteMetadata.description} />
+      </Helmet>
+    );
+  }
+  ```
+
+  - `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`: This will give us a better resposive desing
+  - `<meta charSet="utf-8" />`: That will specify the character encoding of our `html`
+  - `<meta name="description" content={site.siteMetadata.description} />`: Use the `query` description value to add the `meta` tag that give a the site the `description`
+
+- Then we will need to add some `meta` tags for the `open graph`; that is an specification for those other sites that want to share your website information
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" href="/favicon.io" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charSet="utf-8" />
+        <meta name="description" content={site.siteMetadata.description} />
+        {location && <meta property="og:url" content={location.href} />}
+        <meta property="og:image" content={image || "/logo.svg"} />
+        <meta property="og:title" content={title} key="og:title" />
+        <meta
+          property="og:site_name"
+          content={site.siteMetadata.title}
+          key="og:sitename"
+        />
+        <meta
+          property="og:description"
+          content={description}
+          key="og:description"
+        />
+      </Helmet>
+    );
+  }
+  ```
+
+  - `{location && <meta property="og:url" content={location.href} />}`: This will set the `url` that the other sites will use when they share the site and will be avilable if the `location` prop exist
+  - `<meta property="og:image" content={image || '/logo.svg'} />`: This will set the image that those sites will use when they share the page and if we don't send any image via prop it will fallback to the `logo` svg on the `static` folder
+  - `<meta property="og:title" content={title} key="og:title" />`: The `title` that will present
+  - `<meta property="og:site_name" content={site.siteMetadata.title} key="og:sitename" />`: This will set the name of our stie
+  - `<meta property="og:description" content={description} key="og:description" />`: Set the description that will be share
+
+- Finally; we need to add the `children` prop in case you want to override any of the default values or put another tag on the `header`
+
+  ```js
+  export default function SEO({
+    children,
+    location,
+    description,
+    title,
+    image,
+  }) {
+    const { site } = useStaticQuery(graphql`...`);
+
+    return (
+      <Helmet titleTemplate={`%s - ${site.siteMetadata.title}`}>
+        <html lang="en" />
+        <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" href="/favicon.io" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charSet="utf-8" />
+        <meta name="description" content={site.siteMetadata.description} />
+        {location && <meta property="og:url" content={location.href} />}
+        <meta property="og:image" content={image || "/logo.svg"} />
+        <meta property="og:title" content={title} key="og:title" />
+        <meta
+          property="og:site_name"
+          content={site.siteMetadata.title}
+          key="og:sitename"
+        />
+        <meta
+          property="og:description"
+          content={description}
+          key="og:description"
+        />
+        {children}
+      </Helmet>
+    );
+  }
+  ```
+
+- Now go to every single page and templates and add the `SEO` components
+  `templates/Pizza.js`
+
+  ```js
+  export default function SinglePizzaPage({ data: { pizza } }) {
+    return (
+      <>
+        <SEO title={pizza.name} image={pizza.image?.asset?.fluid?.src} />
+        <PizzaGrid>...</PizzaGrid>
+      </>
+    );
+  }
+  ```
+
+  To prevent errors in the case that we don't send an image we use what is called `nested changing`(The `?` in the image value) that will ask first if the property exists and that will help users to prevent that the page renders even when isn't an image
+
+  `template/Slicemaster.js`
+
+  ```js
+  export default function SingleSlicemaster({ data: { person } }) {
+    return (
+      <>
+        <SEO title={person.name} image={person.image.asset.src} />
+        <div className="center">...</div>
+      </>
+    );
+  }
+  ```
+
+  `pages/pizzas.js`
+
+  ```js
+  export default function PizzasPage({ data, pageContext }) {
+    const pizzas = data.pizzas.nodes;
+    return (
+      <>
+        <SEO
+          title={
+            pageContext.topping
+              ? `Pizza with ${pageContext.topping}`
+              : `All pizzas`
+          }
+        />
+        <ToppingsFilter />
+        <PizzaList pizzas={pizzas} />
+      </>
+    );
+  }
+  ```
+
+  This will give us a `title` depending on the `topping`
+
+  `pages/slicemasters.js`
+
+  ```js
+  export default function SlicemastersPage({ data, pageContext }) {
+  const slicemasters = data.slicemasters.nodes;
+    return (
+      <>
+        <SEO title={`Slicemasters - Page ${pageContext.currentPage || 1}`} />
+        <Pagination ... />
+        <SlicemasterGrid>...</SlicemasterGrid>
+      </>
+    );
+  }
+  ```
+
+  This will give us a `title` with the current number of the page that we are at the moment or 1 if you are on the first one
+
+  `pages/order.js`
+
+  ```js
+  export default function OrderPage() {
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <p>Hey! I'm order page page</p>
+      </>
+    );
+  }
+  ```
+
+  `pages/beers.js`
+
+  ```js
+  export default function BeersPage({ data }) {
+    const beers = data.beers.nodes;
+    return (
+      <>
+        <SEO title={`Beers! We have ${beers.length}`} />
+        <h2 className="center">
+          We have {beers.length} Beers available. Dine-in only!
+        </h2>
+        <BeerGridStyle>...</BeerGridStyle>
+      </>
+    );
+  }
+  ```
+
+  This will give us a `title` with the number of `beers` that we fetch from the API
+
+- Now start your local server
+- Each page checking if you have the value that you add using `helmet` on the `HTML` or `title` of the tab for the current page

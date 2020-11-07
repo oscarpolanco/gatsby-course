@@ -81,7 +81,7 @@ async function fetchBeersAndTurnIntoNodes({
 export async function turnSlicemasterIntoPages({ graphql, actions }) {
   const { data } = await graphql(`
     query {
-      slicemaster: allSanityPerson {
+      slicemasters: allSanityPerson {
         totalCount
         nodes {
           name
@@ -94,8 +94,18 @@ export async function turnSlicemasterIntoPages({ graphql, actions }) {
     }
   `);
 
+  data.slicemasters.nodes.forEach((slicemaster) => {
+    actions.createPage({
+      path: `slicemasters/${slicemaster.slug.current}`,
+      component: path.resolve('./src/templates/Slicemaster.js'),
+      context: {
+        slug: slicemaster.slug.current,
+      },
+    });
+  });
+
   const pageSize = parseInt(process.env.GATSBY_PAGE_SIZE);
-  const pageCount = Math.ceil(data.slicemaster.totalCount / pageSize);
+  const pageCount = Math.ceil(data.slicemasters.totalCount / pageSize);
 
   Array.from({ length: pageCount }).forEach((_, i) => {
     actions.createPage({
