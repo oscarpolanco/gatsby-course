@@ -4603,3 +4603,401 @@ Now we are going to be working with [SEO](https://developer.mozilla.org/en-US/do
 
 - Now start your local server
 - Each page checking if you have the value that you add using `helmet` on the `HTML` or `title` of the tab for the current page
+
+## Module 10: Order form, custon hooks and state manangement
+
+At this point we can begin to work with the `order` page that will be in charge of get information about the user; take the `pizzas` that the user want; calculate the amount that the user will be charge and send an email to the user's mail with the details of the `order`.
+
+### Creating the order page with custom hooks
+
+- First; go to the `order.js` file in the `gatsby/order` directory
+- Delete the message on the return statement
+- Add a `form` tag in the return statement
+  ```js
+  export default function OrderPage() {
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form></form>
+    );
+  }
+  ```
+- Add a `fielset` tag wit a `legend` that said `Your info` and 2 `labels` with their respective `inputs` for the `name` and `email` of the client
+  ```js
+  export default function OrderPage() {
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+            />
+          </fieldset>
+        </form>
+    );
+  }
+  ```
+- With this alone, your `inputs` won't work because we need to have a `state` associate with your `input` that represent its value and a function that change that `state` every time the user type on the `input`; but we actually don't want to create a `state` for every `input` so we will create a custom `hook` that will give us the advantage of reusing the same `state` for all `inputs`. So go to the `utils` directory and create a file call `useForm.js`
+- Import `useState` from `react`
+  `import { useState } from 'react';`
+- Now export a function call `useForm` that recive a parameter call `default`
+  `export default function useForm(defaults) {}`
+- Inside of the `useForm` function create an `state` using `useState` that recive the `default parameter` and return a `state` call `value` and a function call `setValue`
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+  }
+  ```
+- Then create a function call `updateValue` that recive the `event` object of the `input` as a parameter
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {}
+  }
+  ```
+
+- Inside of the `updateValue` function; use the `setValues` function to update the `values` state like the following:
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      setValues({
+        ...values,
+        [e.target.name]: e.target.value,
+      });
+    }
+  }
+  ```
+
+  This will use the `name` propety of the `event` object to have the exact property `name` so an `input` with `name="email"` will be associate with a `state` call `email` and will update only this property when the `input` change also we use destructuring to have all other `input` information in the `values` state
+
+- Sometimes the `input` can be a `number` and the `event` object retrun to us the `value` as a `string` so we need to check if this happne and convert it back to a `number`
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      let { value } = e.target;
+      if (e.target.type === "number") {
+        value = parseInt(value);
+      }
+
+      setValues({
+        ...values,
+        [e.target.name]: value,
+      });
+    }
+  }
+  ```
+
+- Now on the `useForm` function return the `values` state and the `updateValue` function
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      let { value } = e.target;
+      if (e.target.type === "number") {
+        value = parseInt(value);
+      }
+      setValues({
+        ...values,
+        [e.target.name]: value,
+      });
+    }
+
+    return { values, updateValue };
+  }
+  ```
+
+- Then go back to the `order.js` file and impor the `useForm` hook
+  `import useForm from '../utils/useForm';`
+- Use the `useForm` hook inside of the `OrderPage` function with a `default` value that will be an object with the `name` and `email` property set to empty `string`
+
+  ```js
+  export default function OrderPage() {
+    const { values, updateValue } = useForm({
+      name: '',
+      email: '',
+    });
+
+    return (...);
+  }
+  ```
+
+- Now add the `value` property with the respective `state` for the `input` and an `onChange` property that will use the `updateValue` function
+
+  ```js
+  export default function OrderPage() {
+    const { values, updateValue } = useForm({
+      name: '',
+      email: '',
+    });
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={values.name}
+              onChange={updateValue}
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={values.email}
+              onChange={updateValue}
+            />
+          </fieldset>
+        </form>
+    );
+  }
+  ```
+
+- Now for the next part of the `order` page we need to get all `pizzas` so the `user` can choose what it wants to `order`. For this, we will make a page `query` to get all the `pizza` data from `sanity` so import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Bellow the `OrderPage` function export a constant call `query` that it value will be the result of the `query`
+
+  ```js
+  export default function OrderPage() {...}
+
+  export const query = graphql``;
+  ```
+
+- Now add a `query` that bring all `pizzas` from `sanity` and call it `pizzas` with it `id`, `name`, `slug`, `price`, `image`
+
+  ```js
+  export default function OrderPage() {...}
+
+  export const query = graphql`
+    query {
+      pizzas: allSanityPizza {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          price
+          image {
+            asset {
+              fluid(maxWidth: 100) {
+                ...GatsbySanityImageFluid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+
+- Now add the `data` parameter to the `OrderPage` props
+
+  ```js
+  export default function OrderPage({ data }) {...}
+
+  export const query = graphql`...`;
+  ```
+
+- Then use use the `data` value to get all `pizzas`
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+        </form>
+      </>
+    );
+  }
+
+  export const query = graphql`...`;
+  ```
+
+- Use another `fieldset` tag using the following content
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <div>
+                  <Img
+                    width="50"
+                    heigth="50"
+                    fluid={pizza.image.asset.fluid}
+                    alt={pizza.name}
+                  />
+                  <h2>{pizza.name}</h2>
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+
+  export const query = graphql`...`;
+  ```
+
+- Now we need to put the `price` of each `pizza` for different sizes; in this case `small`; `mideum` and `large`. So bellow of the previews content that we add a `div` that have a loop for the sizes that create a button for each of them
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <div>...</div>
+                <div>
+                  {["S", "M", "L"].map((size) => (
+                    <button type="button">{size}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+  ```
+
+- But we need the actual `price` of the `pizza` and we go it on the `query` that we did but is not properly formatted so we are going to create a function for this. Go to the `utils` directory and create a file call `calculatePizzaPrice.js`
+- Create a constant call `sizes` in this newly created file that is and object that have the following
+  ```js
+  const sizes = {
+    S: 0.75,
+    M: 1,
+    L: 1.25,
+  };
+  ```
+- Export a function call `calculatePizzaPrice` bellow the `sizes` constant that recive the `size` and a `cents` property
+  `export default function calculatePizzaPrice(cents, size) {}`
+- In the `calculatePizzaPrice` fuction `return` the `cents` multiply by the `sizes`
+  ```js
+  export default function calculatePizzaPrice(cents, size) {
+    return cents * sizes[size];
+  }
+  ```
+  We did this because the `price` that we put on `sanity` represents the `medium` size so we need to calculate the others
+- Now create another file on the `utils` directory that will be call `formatMoney.js`
+- In this file create a constant call `formatter` that use the `NumberFormat` function from `Intl` and send an object to configure the `currency` for `US` dollars
+  ```js
+  const formatter = Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  ```
+- Then export a function call `formatMoney` that recive `cents`
+  `export default function formatMoney(cents) {}`
+- Inside of the `formatMoney` return the `formatter` cosntant like this
+  ```js
+  export default function formatMoney(cents) {
+    return formatter.format(cents / 100);
+  }
+  ```
+  As you may recall the `price` that we put on `sanity` is on `cents` so we need to divide to get the actual value of the `pizza`
+- Go back to the `order.js` file and import the `formatMoney` and `calculatePizzaPrice` functions
+  ```js
+  import calculatePizzaPrice from "../utils/calculatePizzaPrice";
+  import formatMoney from "../utils/formatMoney";
+  ```
+- Use both function on each `price` button that we created before
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <div>...</div>
+                <div>
+                  {["S", "M", "L"].map((size) => (
+                    <button type="button">
+                      {size}{" "}
+                      {formatMoney(calculatePizzaPrice(pizza.price, size))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+  ```
+
+- Start your local server
+- Go to the `order` page
+- Check that everything is where is suppose to and it doesn't have errors
