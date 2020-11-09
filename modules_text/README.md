@@ -4865,13 +4865,13 @@ At this point we can begin to work with the `order` page that will be in charge 
             <legend>Menu</legend>
             {pizzas.map((pizza) => (
               <div key={pizza.id}>
+                <Img
+                  width="50"
+                  heigth="50"
+                  fluid={pizza.image.asset.fluid}
+                  alt={pizza.name}
+                />
                 <div>
-                  <Img
-                    width="50"
-                    heigth="50"
-                    fluid={pizza.image.asset.fluid}
-                    alt={pizza.name}
-                  />
                   <h2>{pizza.name}</h2>
                 </div>
               </div>
@@ -4905,6 +4905,7 @@ At this point we can begin to work with the `order` page that will be in charge 
             <legend>Menu</legend>
             {pizzas.map((pizza) => (
               <div key={pizza.id}>
+                <Img... />
                 <div>...</div>
                 <div>
                   {["S", "M", "L"].map((size) => (
@@ -4980,6 +4981,7 @@ At this point we can begin to work with the `order` page that will be in charge 
             <legend>Menu</legend>
             {pizzas.map((pizza) => (
               <div key={pizza.id}>
+                <Img... />
                 <div>...</div>
                 <div>
                   {["S", "M", "L"].map((size) => (
@@ -5001,3 +5003,196 @@ At this point we can begin to work with the `order` page that will be in charge 
 - Start your local server
 - Go to the `order` page
 - Check that everything is where is suppose to and it doesn't have errors
+
+### Styling our Order form
+
+Now that we got the `inputs that we need on the `from`; we will take a moment to add some `styles` to it. Since the `order` page file is getting too big we will separate the `styles` for this page and put then in a new file in the `styles` directory
+
+- First; go to the `styles` directory and create a new file call `OrderStyles.js`
+- On this newly created file import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Now create and export a constant call `OrderStyles` for the `form` tag
+  ```js
+  const OrderStyles = styled.form``;
+
+  export default OrderStyles;
+  ```
+- Go to the `order.js` file in the `form` directory and import the `OrderStyles` file
+  `import OrderStyles from '../styles/orderStyles';`
+- Replace the `form` tag with `OrderStyles`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>...</OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `OrderStyles`  and add the following:
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  `
+  ```
+  This will create 2 colums for all elements inside the `form` and apply a space betwen then of `20px`. The size of the columns will be determine distributing the size of the container father betwen the 2 colums
+- Now we will add some styling for the specific `fieldset` inside the form
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    fieldset {
+      grid-column: span 2;
+      max-height: 600px;
+      overflow: auto;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+  `
+  ```
+  We already have 2 columns but now in every `fieldset`, we make every column `span` the 2 columns so that means that every column will have a 100% the sizes of the container. We add a `max-height` so when we have more content than the size of the `fieldset` we can add a `scroll` bar then a `gap` between elements and finally all the elements will be aligned to the start.
+- Now we need to add some specific style to the `order` and `menu` so those `fieldset` is side by side.  So add a class of `order` and `menu` to their respective `fieldset`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `OrderStyles` and add the following
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    fieldset {
+      grid-column: span 2;
+      max-height: 600px;
+      overflow: auto;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+      &.order,
+      &.menu {
+        grid-column: span 1;
+      }
+    }
+  `
+  ```
+  Just `span` the column to take only one of the previously defined columns at the start of the `MenuItemsStyles`
+- Now we need to style the specific  `pizza` item for this so on the `styles` directory create a file call `MenuItemsStyles.js`
+- In this new file import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Now create and export a constant call `MenuItemsStyles`
+  ```js
+  const MenuItemsStyles = styled.div``
+
+  export default MenuItemsStyles;
+  ```
+- Go to the `order` page file import `MenuItemsStyles`
+  `import MenuItemsStyles from '../styles/MenuStyles';`
+- Use `MenuItemsStyles` on the `div` that have the `key` propety in the `menu` fieldset
+  ```js
+  export default function OrderPage({ data }) {
+  ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <MenuItemsStyles key={pizza.id}>
+              ...
+              </MenuItemsStyles>
+            ))}
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `MenuItemsStyles` file and add the following style
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+  `
+  ```
+  First, we define 2 columns where the `image` will be taken `100px` and the others will be to the right regardless of how much space is there then we add 2 rows that will distribute it space with a some `gap` between then and align all content to the `center`
+- Now we need that the `image` select 2 `rows` so the buttons will be bellow the title
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+    .gatsby-image-wrapper {
+      grid-row: span 2;
+      height: 100%;
+    }
+  `
+  ```
+  We use the `gatsby-image-wrapper` to target the `images` and  `span` then 2 rows. We add the `100%` height for the `image` to strech itself regarding how hight is the container; `gatsby-image` use `object-fit-covert` that is why the `image` stretch itself
+- Some more additional styles for the elements
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+    .gatsby-image-wrapper {
+      grid-row: span 2;
+      height: 100%;
+    }
+    p {
+      margin: 0;
+    }
+    button {
+      font-size: 1.5rem;
+    }
+    button + button {
+      margin-left: 1rem;
+    }
+  `
+  ```
+  Remove all spaces of the `p` tags; add the sizes of the button letters and when we have a `button` next to a `button` we add some space between then
+- Finally, start your local server and go to the `order` page, and test
+
