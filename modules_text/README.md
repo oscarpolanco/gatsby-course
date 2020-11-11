@@ -4603,3 +4603,1057 @@ Now we are going to be working with [SEO](https://developer.mozilla.org/en-US/do
 
 - Now start your local server
 - Each page checking if you have the value that you add using `helmet` on the `HTML` or `title` of the tab for the current page
+
+## Module 10: Order form, custon hooks and state manangement
+
+At this point we can begin to work with the `order` page that will be in charge of get information about the user; take the `pizzas` that the user want; calculate the amount that the user will be charge and send an email to the user's mail with the details of the `order`.
+
+### Creating the order page with custom hooks
+
+- First; go to the `order.js` file in the `gatsby/order` directory
+- Delete the message on the return statement
+- Add a `form` tag in the return statement
+  ```js
+  export default function OrderPage() {
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form></form>
+    );
+  }
+  ```
+- Add a `fielset` tag wit a `legend` that said `Your info` and 2 `labels` with their respective `inputs` for the `name` and `email` of the client
+  ```js
+  export default function OrderPage() {
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+            />
+          </fieldset>
+        </form>
+    );
+  }
+  ```
+- With this alone, your `inputs` won't work because we need to have a `state` associate with your `input` that represent its value and a function that change that `state` every time the user type on the `input`; but we actually don't want to create a `state` for every `input` so we will create a custom `hook` that will give us the advantage of reusing the same `state` for all `inputs`. So go to the `utils` directory and create a file call `useForm.js`
+- Import `useState` from `react`
+  `import { useState } from 'react';`
+- Now export a function call `useForm` that recive a parameter call `default`
+  `export default function useForm(defaults) {}`
+- Inside of the `useForm` function create an `state` using `useState` that recive the `default parameter` and return a `state` call `value` and a function call `setValue`
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+  }
+  ```
+- Then create a function call `updateValue` that recive the `event` object of the `input` as a parameter
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {}
+  }
+  ```
+
+- Inside of the `updateValue` function; use the `setValues` function to update the `values` state like the following:
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      setValues({
+        ...values,
+        [e.target.name]: e.target.value,
+      });
+    }
+  }
+  ```
+
+  This will use the `name` propety of the `event` object to have the exact property `name` so an `input` with `name="email"` will be associate with a `state` call `email` and will update only this property when the `input` change also we use destructuring to have all other `input` information in the `values` state
+
+- Sometimes the `input` can be a `number` and the `event` object retrun to us the `value` as a `string` so we need to check if this happne and convert it back to a `number`
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      let { value } = e.target;
+      if (e.target.type === "number") {
+        value = parseInt(value);
+      }
+
+      setValues({
+        ...values,
+        [e.target.name]: value,
+      });
+    }
+  }
+  ```
+
+- Now on the `useForm` function return the `values` state and the `updateValue` function
+
+  ```js
+  export default function useForm(defaults) {
+    const [values, setValues] = useState(defaults);
+
+    function updateValue(e) {
+      let { value } = e.target;
+      if (e.target.type === "number") {
+        value = parseInt(value);
+      }
+      setValues({
+        ...values,
+        [e.target.name]: value,
+      });
+    }
+
+    return { values, updateValue };
+  }
+  ```
+
+- Then go back to the `order.js` file and impor the `useForm` hook
+  `import useForm from '../utils/useForm';`
+- Use the `useForm` hook inside of the `OrderPage` function with a `default` value that will be an object with the `name` and `email` property set to empty `string`
+
+  ```js
+  export default function OrderPage() {
+    const { values, updateValue } = useForm({
+      name: '',
+      email: '',
+    });
+
+    return (...);
+  }
+  ```
+
+- Now add the `value` property with the respective `state` for the `input` and an `onChange` property that will use the `updateValue` function
+
+  ```js
+  export default function OrderPage() {
+    const { values, updateValue } = useForm({
+      name: '',
+      email: '',
+    });
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={values.name}
+              onChange={updateValue}
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={values.email}
+              onChange={updateValue}
+            />
+          </fieldset>
+        </form>
+    );
+  }
+  ```
+
+- Now for the next part of the `order` page we need to get all `pizzas` so the `user` can choose what it wants to `order`. For this, we will make a page `query` to get all the `pizza` data from `sanity` so import `graphql` from `gatsby`
+  `import { graphql } from 'gatsby';`
+- Bellow the `OrderPage` function export a constant call `query` that it value will be the result of the `query`
+
+  ```js
+  export default function OrderPage() {...}
+
+  export const query = graphql``;
+  ```
+
+- Now add a `query` that bring all `pizzas` from `sanity` and call it `pizzas` with it `id`, `name`, `slug`, `price`, `image`
+
+  ```js
+  export default function OrderPage() {...}
+
+  export const query = graphql`
+    query {
+      pizzas: allSanityPizza {
+        nodes {
+          name
+          id
+          slug {
+            current
+          }
+          price
+          image {
+            asset {
+              fluid(maxWidth: 100) {
+                ...GatsbySanityImageFluid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  ```
+
+- Now add the `data` parameter to the `OrderPage` props
+
+  ```js
+  export default function OrderPage({ data }) {...}
+
+  export const query = graphql`...`;
+  ```
+
+- Then use use the `data` value to get all `pizzas`
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+        </form>
+      </>
+    );
+  }
+
+  export const query = graphql`...`;
+  ```
+
+- Use another `fieldset` tag using the following content
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <Img
+                  width="50"
+                  heigth="50"
+                  fluid={pizza.image.asset.fluid}
+                  alt={pizza.name}
+                />
+                <div>
+                  <h2>{pizza.name}</h2>
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+
+  export const query = graphql`...`;
+  ```
+
+- Now we need to put the `price` of each `pizza` for different sizes; in this case `small`; `mideum` and `large`. So bellow of the previews content that we add a `div` that have a loop for the sizes that create a button for each of them
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <Img... />
+                <div>...</div>
+                <div>
+                  {["S", "M", "L"].map((size) => (
+                    <button type="button">{size}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+  ```
+
+- But we need the actual `price` of the `pizza` and we go it on the `query` that we did but is not properly formatted so we are going to create a function for this. Go to the `utils` directory and create a file call `calculatePizzaPrice.js`
+- Create a constant call `sizes` in this newly created file that is and object that have the following
+  ```js
+  const sizes = {
+    S: 0.75,
+    M: 1,
+    L: 1.25,
+  };
+  ```
+- Export a function call `calculatePizzaPrice` bellow the `sizes` constant that recive the `size` and a `cents` property
+  `export default function calculatePizzaPrice(cents, size) {}`
+- In the `calculatePizzaPrice` fuction `return` the `cents` multiply by the `sizes`
+  ```js
+  export default function calculatePizzaPrice(cents, size) {
+    return cents * sizes[size];
+  }
+  ```
+  We did this because the `price` that we put on `sanity` represents the `medium` size so we need to calculate the others
+- Now create another file on the `utils` directory that will be call `formatMoney.js`
+- In this file create a constant call `formatter` that use the `NumberFormat` function from `Intl` and send an object to configure the `currency` for `US` dollars
+  ```js
+  const formatter = Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  ```
+- Then export a function call `formatMoney` that recive `cents`
+  `export default function formatMoney(cents) {}`
+- Inside of the `formatMoney` return the `formatter` cosntant like this
+  ```js
+  export default function formatMoney(cents) {
+    return formatter.format(cents / 100);
+  }
+  ```
+  As you may recall the `price` that we put on `sanity` is on `cents` so we need to divide to get the actual value of the `pizza`
+- Go back to the `order.js` file and import the `formatMoney` and `calculatePizzaPrice` functions
+  ```js
+  import calculatePizzaPrice from "../utils/calculatePizzaPrice";
+  import formatMoney from "../utils/formatMoney";
+  ```
+- Use both function on each `price` button that we created before
+
+  ```js
+  export default function OrderPage({ data }) {
+    const { values, updateValue } = useForm({
+      name: "",
+      email: "",
+    });
+
+    const pizzas = data.pizzas.nodes;
+
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <form>
+          <fieldset>...</fieldset>
+          <fieldset>
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <div key={pizza.id}>
+                <Img... />
+                <div>...</div>
+                <div>
+                  {["S", "M", "L"].map((size) => (
+                    <button type="button">
+                      {size}{" "}
+                      {formatMoney(calculatePizzaPrice(pizza.price, size))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        </form>
+      </>
+    );
+  }
+  ```
+
+- Start your local server
+- Go to the `order` page
+- Check that everything is where is suppose to and it doesn't have errors
+
+### Styling our Order form
+
+Now that we got the `inputs that we need on the `from`; we will take a moment to add some `styles`to it. Since the`order`page file is getting too big we will separate the`styles`for this page and put then in a new file in the`styles` directory
+
+- First; go to the `styles` directory and create a new file call `OrderStyles.js`
+- On this newly created file import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Now create and export a constant call `OrderStyles` for the `form` tag
+
+  ```js
+  const OrderStyles = styled.form``;
+
+  export default OrderStyles;
+  ```
+
+- Go to the `order.js` file in the `form` directory and import the `OrderStyles` file
+  `import OrderStyles from '../styles/orderStyles';`
+- Replace the `form` tag with `OrderStyles`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>...</OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `OrderStyles` and add the following:
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  `;
+  ```
+  This will create 2 colums for all elements inside the `form` and apply a space betwen then of `20px`. The size of the columns will be determine distributing the size of the container father betwen the 2 colums
+- Now we will add some styling for the specific `fieldset` inside the form
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    fieldset {
+      grid-column: span 2;
+      max-height: 600px;
+      overflow: auto;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+  `;
+  ```
+  We already have 2 columns but now in every `fieldset`, we make every column `span` the 2 columns so that means that every column will have a 100% the sizes of the container. We add a `max-height` so when we have more content than the size of the `fieldset` we can add a `scroll` bar then a `gap` between elements and finally all the elements will be aligned to the start.
+- Now we need to add some specific style to the `order` and `menu` so those `fieldset` is side by side. So add a class of `order` and `menu` to their respective `fieldset`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `OrderStyles` and add the following
+  ```js
+  const OrderStyles = styled.form`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    fieldset {
+      grid-column: span 2;
+      max-height: 600px;
+      overflow: auto;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+      &.order,
+      &.menu {
+        grid-column: span 1;
+      }
+    }
+  `;
+  ```
+  Just `span` the column to take only one of the previously defined columns at the start of the `MenuItemsStyles`
+- Now we need to style the specific `pizza` item for this so on the `styles` directory create a file call `MenuItemsStyles.js`
+- In this new file import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Now create and export a constant call `MenuItemsStyles`
+
+  ```js
+  const MenuItemsStyles = styled.div``;
+
+  export default MenuItemsStyles;
+  ```
+
+- Go to the `order` page file import `MenuItemsStyles`
+  `import MenuItemsStyles from '../styles/MenuStyles';`
+- Use `MenuItemsStyles` on the `div` that have the `key` propety in the `menu` fieldset
+  ```js
+  export default function OrderPage({ data }) {
+  ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <MenuItemsStyles key={pizza.id}>
+              ...
+              </MenuItemsStyles>
+            ))}
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `MenuItemsStyles` file and add the following style
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+  `;
+  ```
+  First, we define 2 columns where the `image` will be taken `100px` and the others will be to the right regardless of how much space is there then we add 2 rows that will distribute it space with a some `gap` between then and align all content to the `center`
+- Now we need that the `image` select 2 `rows` so the buttons will be bellow the title
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+    .gatsby-image-wrapper {
+      grid-row: span 2;
+      height: 100%;
+    }
+  `;
+  ```
+  We use the `gatsby-image-wrapper` to target the `images` and `span` then 2 rows. We add the `100%` height for the `image` to strech itself regarding how hight is the container; `gatsby-image` use `object-fit-covert` that is why the `image` stretch itself
+- Some more additional styles for the elements
+  ```js
+  const MenuItemsStyles = styled.div`
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0 1.3rem;
+    align-content: center;
+    align-items: center;
+    .gatsby-image-wrapper {
+      grid-row: span 2;
+      height: 100%;
+    }
+    p {
+      margin: 0;
+    }
+    button {
+      font-size: 1.5rem;
+    }
+    button + button {
+      margin-left: 1rem;
+    }
+  `;
+  ```
+  Remove all spaces of the `p` tags; add the sizes of the button letters and when we have a `button` next to a `button` we add some space between then
+- Finally, start your local server and go to the `order` page, and test
+
+### Custom hook for our order form
+
+At this moment we have everything we need to get information about the `order` except the actual `order` display on the page so we are going to we using a `custom hook` that will help us to display; remove the item and calculate the valor of an order. So let's begin with the process.
+
+- First; go to the `utils` directory and create a file call `usePizza.js`
+- Export a function call `usePizza` and recive an object with a `pizza` and `inputs` property
+  `export default function usePizza({ pizzas, inputs }) {}`
+  We will use this parameters on the future
+- Now import `useState` from `react`
+  `import { useState } from 'react';`
+- Add an `state` call `order` using `useState`
+  ```js
+  export default function usePizza({ pizzas, inputs }) {
+    const [order, setOrder] = useState([]);
+  }
+  ```
+- Now create another function call `addToOrder` that recive a `orderedPizza` as a parameter and set the `order` state to the same value that the `order`state has plus the new `orderedPizza`
+
+  ```js
+  export default function usePizza({ pizzas, inputs }) {
+    const [order, setOrder] = useState([]);
+
+    function addToOrder(orderedPizza) {
+      setOrder([...order, orderedPizza]);
+    }
+  }
+  ```
+
+- Now create another function call `removeFromOrder` that recive an `index` as a parameter and set the `order` state removing the value in the `array` on which position match with the `index`
+
+  ```js
+  export default function usePizza({ pizzas, inputs }) {
+    const [order, setOrder] = useState([]);
+
+    function addToOrder(orderedPizza) {
+      setOrder([...order, orderedPizza]);
+    }
+
+    function removeFromOrder(index) {
+      setOrder([...order.slice(0, index), ...order.slice(index + 1)]);
+    }
+  }
+  ```
+
+- Then return the `order` state, the `addOrder` and the `removeOrder` functions
+
+  ```js
+  export default function usePizza({ pizzas, inputs }) {
+    const [order, setOrder] = useState([]);
+
+    function addToOrder(orderedPizza) {
+      setOrder([...order, orderedPizza]);
+    }
+
+    function removeFromOrder(index) {
+      setOrder([...order.slice(0, index), ...order.slice(index + 1)]);
+    }
+
+    return { order, addToOrder, removeFromOrder };
+  }
+  ```
+
+- Go to the `order` page file and import the `usePizza` hook
+  `import usePizza from '../utils/usePizza';`
+- Bellow the `useForm` definition; use the `usePizza` hook and use `pizza` and `values` on an object to send it as a `default` value to the hook
+
+  ```js
+  export default function OrderPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    const { values, updateValue } = useForm({
+      name: '',
+      email: '',
+    });
+    const { order, addToOrder, removeFromOrder } = usePizza({
+      pizzas,
+      input: values,
+    });
+
+    return (...)
+  }
+  ```
+
+- Then go to the `sizes` button and add a `onClick` property that recive a function that returns the `addOrder` function sending an object with the `id` and a `size`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <MenuItemsStyles key={pizza.id}>
+                ...
+                <div>
+                  {['S', 'M', 'L'].map((size) => (
+                    <button
+                      type="button"
+                      onClick={() => addToOrder({ id: pizza.id, size })}
+                    >
+                      {size} {formatMoney(calculatePizzaPrice(pizza.price, size))}
+                    </button>
+                  ))}
+                </div>
+              </MenuItemsStyles>
+            ))}
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Now we need a new component that displays our order so go to the `components` directory and create a file call `PizzaOrder.js`
+- In this new file import `react`
+  `import React from 'react';`
+- Create a function call `PizzaOrder` that recive `order`, `pizzas` and `removeFromOrder` as a prop
+  `export default function PizzaOrder({ order, pizzas, removeFromOrder }) {}`
+- Go back to the `order` page file and import the `PizzaOrder` component
+  `import PizzaOrder from '../components/PizzaOrder';`
+- Use the `PizzaOrder` component below the `order` legend and send all corresponding parameters
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            <PizzaOrder
+              order={order}
+              removeFromOrder={removeFromOrder}
+              pizzas={pizzas}
+            />
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+  We need to sent the `removeFromOrder` function from here because this is bound to the actual `order` state that we have on the `order` page component; if we grad the function direclty on the `PizzaOrder` component importing the hook this will not update the actual `order` state in the `order` page component
+- Go back to the `PizzaOrder` component and return a `map` function of the `order` and use single `order` and `index` as a parameter on the callback function
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          return ()
+        }
+      </>
+    )};
+  }
+  ```
+- Now we need to have the each `pizza` information that are in the `order` so we will use a `filter` function on the `pizzas` object where the `pizza` id are equal to the `singleOrder` id
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return ()
+        }
+      </>
+    )};
+  }
+  ```
+- Import `MenuItemsStyles`, `Img`, `calculatePizzaPrice` and `formatMoney`
+  ```js
+  import MenuItemsStyles from "../styles/MenuStyles";
+  import calculatePizzaPrice from "../utils/calculatePizzaPrice";
+  import formatMoney from "../utils/formatMoney";
+  ```
+- Use `MenuItemsStyles` in the return statement inside of the `order` map
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={singleOrder.id}></MenuItemsStyles>
+          );
+        }
+      </>
+    )};
+  }
+  ```
+- Use the `Img` component as a content of `MenuItemsStyles`
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={singleOrder.id}>
+              <Img fluid={pizza.image.asset.fluid} />
+            </MenuItemsStyles>
+          );
+        }
+      </>
+    )};
+  }
+  ```
+- Put an `h2` tag with the `pizza` title below the `Img` component
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={singleOrder.id}>
+              <Img fluid={pizza.image.asset.fluid} />
+              <h2>{pizza.name}</h2>
+            </MenuItemsStyles>
+          );
+        }
+      </>
+    )};
+  }
+  ```
+- Then add a `p` tag to add the `price` of the `pizza` using the format functions
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={singleOrder.id}>
+              <Img fluid={pizza.image.asset.fluid} />
+              <h2>{pizza.name}</h2>
+              <p>
+                {formatMoney(calculatePizzaPrice(pizza.price, singleOrder.size))}
+              </p>
+            </MenuItemsStyles>
+          );
+        }
+      </>
+    )};
+  }
+  ```
+- Now bellow the `price` add the following `button`
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={singleOrder.id}>
+              <Img fluid={pizza.image.asset.fluid} />
+              <h2>{pizza.name}</h2>
+              <p>
+                {formatMoney(calculatePizzaPrice(pizza.price, singleOrder.size))}
+                <button
+                  type="button"
+                  className="remove"
+                  title={`Remove ${singleOrder.size} ${pizza.name} from order`}
+                  onClick={() => removeFromOrder(index)}
+                >
+                  &times;
+                </button>
+              </p>
+            </MenuItemsStyles>
+          );
+        }
+      </>
+    )};
+  }
+  ```
+  The `title`is for accesibilyty purposes and the `&times;` is the encode value of an `x` also we use the `removeFromOrder` function sending the actual `index` of the `order`
+- Go to the `MenuStyles` file in the `styles` directory and add the follwoing
+
+  ```js
+  const MenuItemsStyles = styled.div`
+    ...
+    position: relative;
+    .gatsby-image-wrapper {... }
+    p {...}
+    button {..}
+  
+    button + button {..}
+    .remove {
+      background: none;
+      color: var(--red);
+      font-size: 3rem;
+      position: absolute;
+      top: 0;
+      right: 0;
+      box-shadow: none;
+      line-height: 1rem;
+    }
+  `;
+  ```
+
+  This will put the `remove` button at the size of the `order` information
+
+- Finally; start your local server
+- Go to the `order` page
+- Click on one of the buttons on the `pizza` and it should be added to the order section without errors
+
+### Calculating the order total
+
+At this moment we can create our order but we still need 2 things the `total amount` of the `order` and the `submit` button that will send the `order` via `email`. At this time we will calculate the `order` amount and put the button without functionality(we will work on this in the next section).
+
+- First; go to the `order` file in the `page` directory and add a new `fieldset` with the following content
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Now on the `utils` directory create a file call `calculateOrderTotal`
+- In this newly created file export a funtion call `calculateOrderTotal` that recive the `order` and the `pizzas`
+  `export default function calculateOrderTotal(order, pizzas) {}`
+- Go back to the `order` file and import the `calculateOrderTotal` funtion
+  `import calculateOrderTotal from '../utils/calculateOrderTotal';`
+- On the`fieldset` that you create before in the `h3` tag use the `calculateOrderTotal` function sending the parameters that it need
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {calculateOrderTotal(order, pizzas)}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `calculateOrderTotal` file and use a `reduce` function on the `order` to create a `total` amount of the `order`. The initial value will be `0`
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {}, 0);
+  }
+  ```
+- Now we need to get the actual `pizza` information that is on the `order`
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {
+      const pizza = pizzas.find(
+        (SinglePizza) => SinglePizza.id === singleOrder.id
+      );
+    }, 0);
+  }
+  ```
+- Then we need to return the `accumulator` plus the current `price` that we get from the `pizza` and to have the actual `price` we need to use the `calculatePizzaPrice` function that we create before so import it at the top of the file
+  `import calculatePizzaPrice from './calculatePizzaPrice';`
+- Return the `acumulator` plus the `price` of the `pizza` in the `calculateOrderTotal` function
+
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {
+      const pizza = pizzas.find(
+        (SinglePizza) => SinglePizza.id === singleOrder.id
+      );
+
+      return runningTotal   calculatePizzaPrice(pizza.price, singleOrder.size);
+    }, 0);
+  }
+  ```
+
+- Go back to the `order` file and use the `formatMoney` function to wrap the `calculateOrderTotal`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Finally, start your local server
+- Go to the `order` page
+- Click on one of the `pizza` buttons
+- The result `price` should be updated each time you add a `pizza` to the `order` and have the correct format

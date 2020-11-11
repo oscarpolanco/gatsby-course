@@ -20,8 +20,8 @@
 - [Beers page](http://localhost:8000/beers)
 - [Order page](http://localhost:8000/order)
 - [Pizza page](http://localhost:8000/pizzas)
-- [Pizza by topping page](http://localhost:8000/topping/Hot%20Peppers)(This URL is for a `Hot peppers` page. At the end of the URL alway will have `/topping/${topping_name}`)
-- [Single Pizza page](http://localhost:8000/pizza/cluck-norris)(This URL is for the `Cluck Norris` pizza. At the end of the URL alway will have `/pizza/${pizza_slug}`)
+- [Pizza by topping page](http://localhost:8000/topping/Hot%20Peppers)(This URL is for a `Hot peppers` page. At the end of the URL alway will have `/topping/topping_name`)
+- [Single Pizza page](http://localhost:8000/pizza/cluck-norris)(This URL is for the `Cluck Norris` pizza. At the end of the URL alway will have `/pizza/pizza_slug`)
 - [Slicemaster page](http://localhost:8000/slicemaster)(This page has `pagination` so the `URL` will begin with `/` for the first page and will add a number for the other page at the end of the `URL`)
 - [Single Slicemaster page](http://localhost:8000/slicemasters/august)(This URL is for `August`. At the end of the URL alway will have `/slicemasters/slug_of_a_person`)
 
