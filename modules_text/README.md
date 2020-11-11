@@ -5217,6 +5217,7 @@ At this moment we have everything we need to get information about the `order` e
   }
   ```
 - Now create another function call `addToOrder` that recive a `orderedPizza` as a parameter and set the `order` state to the same value that the `order`state has plus the new `orderedPizza`
+
   ```js
   export default function usePizza({ pizzas, inputs }) {
     const [order, setOrder] = useState([]);
@@ -5226,6 +5227,7 @@ At this moment we have everything we need to get information about the `order` e
     }
   }
   ```
+
 - Now create another function call `removeFromOrder` that recive an `index` as a parameter and set the `order` state removing the value in the `array` on which position match with the `index`
 
   ```js
@@ -5516,3 +5518,142 @@ At this moment we have everything we need to get information about the `order` e
 - Finally; start your local server
 - Go to the `order` page
 - Click on one of the buttons on the `pizza` and it should be added to the order section without errors
+
+### Calculating the order total
+
+At this moment we can create our order but we still need 2 things the `total amount` of the `order` and the `submit` button that will send the `order` via `email`. At this time we will calculate the `order` amount and put the button without functionality(we will work on this in the next section).
+
+- First; go to the `order` file in the `page` directory and add a new `fieldset` with the following content
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Now on the `utils` directory create a file call `calculateOrderTotal`
+- In this newly created file export a funtion call `calculateOrderTotal` that recive the `order` and the `pizzas`
+  `export default function calculateOrderTotal(order, pizzas) {}`
+- Go back to the `order` file and import the `calculateOrderTotal` funtion
+  `import calculateOrderTotal from '../utils/calculateOrderTotal';`
+- On the`fieldset` that you create before in the `h3` tag use the `calculateOrderTotal` function sending the parameters that it need
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {calculateOrderTotal(order, pizzas)}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go back to the `calculateOrderTotal` file and use a `reduce` function on the `order` to create a `total` amount of the `order`. The initial value will be `0`
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {}, 0);
+  }
+  ```
+- Now we need to get the actual `pizza` information that is on the `order`
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {
+      const pizza = pizzas.find(
+        (SinglePizza) => SinglePizza.id === singleOrder.id
+      );
+    }, 0);
+  }
+  ```
+- Then we need to return the `accumulator` plus the current `price` that we get from the `pizza` and to have the actual `price` we need to use the `calculatePizzaPrice` function that we create before so import it at the top of the file
+  `import calculatePizzaPrice from './calculatePizzaPrice';`
+- Return the `acumulator` plus the `price` of the `pizza` in the `calculateOrderTotal` function
+
+  ```js
+  export default function calculateOrderTotal(order, pizzas) {
+    return order.reduce((runningTotal, singleOrder) => {
+      const pizza = pizzas.find(
+        (SinglePizza) => SinglePizza.id === singleOrder.id
+      );
+
+      return runningTotal   calculatePizzaPrice(pizza.price, singleOrder.size);
+    }, 0);
+  }
+  ```
+
+- Go back to the `order` file and use the `formatMoney` function to wrap the `calculateOrderTotal`
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            ...
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Finally, start your local server
+- Go to the `order` page
+- Click on one of the `pizza` buttons
+- The result `price` should be updated each time you add a `pizza` to the `order` and have the correct format
