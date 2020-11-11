@@ -5657,3 +5657,133 @@ At this moment we can create our order but we still need 2 things the `total amo
 - Go to the `order` page
 - Click on one of the `pizza` buttons
 - The result `price` should be updated each time you add a `pizza` to the `order` and have the correct format
+
+## Module 11: Serverless functions
+
+If you notice when you add a `pizza` to the `order` and change the page using for example the `nav` at the top of the file; the `order` will disappear when you get back to the `order` page because `gatsby` will `umount` the component when you change the page and the `state` will be lost so we need to handle the `order` state differently than other states. We will need to put the `order` state to the highest level that we can so when we `unmount` the `order` page component the state will not be affected.
+
+If you take a look at the `react` dev tool at the top of the components you will see a `Root` component that doesn't change when you navigate between pages and with a hook that `gatsby` allows to use it we manipulate that `Root` component. We also will be using the [context API](https://reactjs.org/docs/context.html) that will help us to stick the state to a higher level.
+
+- First; on the `components` directory create a new file call `OrderContext.js`
+- In this newly created file import `React` and `useState`
+  `import React, { useState } from 'react';`
+- Then use `React.createContext` to create a `context` for the `order`
+  `const OrderContext = React.createContext();`
+- Now we need a `Provider`(Is a component that live on a higther level)
+  `export function OrderProvider({ children }) {}`
+- Inside of the `OrderProvider` create a state for the `order`
+  ```js
+  export function OrderProvider({ children }) {
+    const [order, setOrder] = useState([]);
+  }
+  ```
+- Return a tag of `OrderContext.Provider` that wrap the `children` property
+  ```js
+  export function OrderProvider({ children }) {
+    const [order, setOrder] = useState([]);
+    return (
+      <OrderContext.Provider value={[order, setOrder]}>
+        {children}
+      </OrderContext.Provider>
+    );
+  }
+  ```
+  We need to explicit send the `state` and the `setState` function via the `value` property to be avilable to the `cosumer` childrens
+- Then export the `OrderContext` after the `OrderProvider` component
+  `export default OrderContext;`
+- Go to your `gatsby-browser` and import the `OrderProvider` component
+  `import { OrderProvider } from './src/components/OrderContext';`
+- Export a function call `wrapRootElement`(Need to use this exact name) that recive an object with an `element` property as a parameter
+  `export function wrapRootElement({ element }) {}`
+- Return the `OrderProvider` component wrapping the `element` parameter
+  ```js
+  export function wrapRootElement({ element }) {
+    return <OrderProvider>{element}</OrderProvider>;
+  }
+  ```
+- Go to the `gatsby-ssr.js` and follow the same steps that you just did on the `gatsby-browser` file
+- Now go to your `usePizza` hook in the `utils` directory and import `useContext` from `react` and remove `useState`
+  `import { useContext } from 'react';`
+- Import `OrderContext`
+  `import OrderContext from '../components/OrderContext';`
+- Replace the `useState` that was use to create the `order` state with the `useContext` hook using the `OrderContext` as a default value
+  `const [order, setOrder] = useContext(OrderContext);`
+- Finally; start your local server
+- Go to the `order` page
+- Add a `pizza` to your `order`
+- Click on another page in the `nav`
+- Go back to the `order` page clicking on the `order` option in the `nav`
+- You should see that you still have the `pizza` that you add to your `order`
+
+#### Note:
+
+- If you refresh the page the data will be gone
+
+### Clean up console warnings
+
+- Go to the `PizzaOrder` file on the component directory
+- Go to the `MenuItemsStyles` tag and update the `key`
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={`${singleOrder.id}-${index}`}>
+              ...
+            </MenuItemsStyles>
+          );
+        })}
+      </>
+    );
+  }
+  ```
+  This will allow us to add more than one time a `pizza` to the `order` and still have a `unique` id and the `react` warning will not be shown on the `console`
+- Then go to the `order` page component
+- On the button of the different `size` prices; add a `unique` key
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <MenuItemsStyles key={pizza.id}>
+                ...
+                <div>
+                  {['S', 'M', 'L'].map((size) => (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => addToOrder({ id: pizza.id, size })}
+                    >
+                      {size} {formatMoney(calculatePizzaPrice(pizza.price, size))}
+                    </button>
+                  ))}
+                </div>
+              </MenuItemsStyles>
+            ))}
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
