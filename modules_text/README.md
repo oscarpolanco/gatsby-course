@@ -5903,3 +5903,309 @@ When you build with `gatsby` it will take out the `HTML`; `CSS` and `js` in orde
 - On your browser go to `http://localhost:8888/.netlify/functions/placeOrder`
 - You should see the response on your browser
 - Check the inbox of your [Ethereal](https://ethereal.email/messages) account and you should see the email with the content that we send
+
+### Modifying our custom jook to send the order data
+
+At this moment we have a `serverless` function that sends us an ʻemail` but only have an example content and we want to have the actual order information in the` body` of that ʻemail` so we need to prepare the `client `side of the application to send this data to our` serverless` function and that will be the main focus of this section.
+
+- First; go to the ʻusePizza`hook
+- Import ʻuseState`from`react`ʻImport {useContext, useState} from 'react';`
+- Now add the following `states` inside of the ʻusePizza` function and return it ``  `js
+  export default function usePizza ({pizzas, values}) {
+  const [order, setOrder] = useContext (OrderContext);
+  const [error, setError] = useState ();
+  const [loading, setLoading] = useState (false);
+  const [message, setMessage] = useState ('');
+  ...
+
+  return {
+  order,
+  addToOrder,
+  removeFromOrder,
+  error,
+  loading,
+  message,
+  }
+  }
+  ``'' This will be`states` that will handle:
+
+  - Errors submitting the data (ʻerror` state)
+  - Time that we have a response from our `serverless` function (` loading` state)
+  - Message on successful submit (`message` state)
+
+- Go to the ʻorder`page component and add the new`states` on the ʻusePizza` hook definition
+  `` `js export default function OrderPage ({data}) { const pizzas = data.pizzas.nodes; const {values, updateValue} = useForm ({ name: '', email: '', }); const { order, addToOrder, removeFromOrder, error, message, loading, } = usePizza ({ pizzas, values, }); ... } `` ''
+- Then we can begin to work with the `loading` state. First; we need to add the `disabled` property when the ʻorder` is processing to the` submit` button `` `js
+  <button type = "submit" disabled = {loading}>
+  'Order Ahead'
+  </button>
+  `` ''
+- Change the message of the button to `Place order ...` when we processing the ʻorder` `` `js
+  <button type = "submit" disabled = {loading}>
+  {loading? 'Place Order ...': 'Order Ahead'}
+  </button>
+  `` ''
+- Now we need to add a `handler` to control when someone clicks on the` submit` button. Go to the ʻusePizza` hook and inside of the ʻusePizza` function creates a function call `submitOrder` that receive the ʻevent` as a parameter and return it `` `js
+  export default function usePizza ({pizzas, values}) {
+  ...
+  async function submitOrder (e) {}
+
+  return {
+  ...
+  submitOrder,
+  };
+  }
+  ``'' Since we are going to target our`serverless` function from here we will need the ʻasync` keyword
+
+- Go back to the ʻorder`page component and add the`submitOrder` function to the ʻusePizza` hook definition
+  `` `js export default function OrderPage ({data}) { const pizzas = data.pizzas.nodes; const {values, updateValue} = useForm ({ name: '', email: '', }); const { order, addToOrder, removeFromOrder, error, message, loading, submitOrder, } = usePizza ({ pizzas, values, }); ... } `` ''
+- Now add the `submit` property to ʻOrderStyles` (That represent our` form`tag) and use the`submitOrder` as it value `` `js
+  export default function OrderPage ({data}) {
+  ...
+  return (
+  <>
+  <SEO title = "Order Pizza!" />
+  <OrderStyles onSubmit = {submitOrder}>
+  ...
+  </OrderStyles>
+  </>
+  );
+  }
+  `` ''
+- Now start your local server and go to the ʻorder` page
+- Click on the submit button
+- You should see that some parameters are added to the URL and we want to prevent this
+- Go to the ʻusePizza`hook and inside of the`submitOrder` function add the following: `` `js
+  async function submitOrder (e) {
+  e.preventDefault ();
+  }
+  `` ''
+- Now add the set the `loading` state to` true`; this means that the process of sending the data to our `serverless` function begins and we need to clear any ʻerror` or` messages`that are present on the moment that you`submit` the data `` `js
+  async function submitOrder (e) {
+  e.preventDefault ();
+  setLoading (true);
+  setError (null);
+  setMessage (null);
+  }
+  `` ''
+- Then we need to gather all the data that we need to create the `body` of our ʻemail` but first; rename the ʻinputs` prop to `values`
+  ʻExport default function usePizza ({pizzas, values}) {...} `
+- Go to the ʻorder`page component and use`values` instead of ʻinputs` in the default of the ʻusePizza`hook`const {...} = usePizza ({pizzas, values,});`
+- Import the `formatMoney` and` calculateOrderTotal` functions
+  `` `js import calculateOrderTotal from './calculateOrderTotal'; import formatMoney from './formatMoney'; `` ''
+- Go back to the `usePizza` file and on the `submitOrder` function create a constant call` body` that will have the following structure and print that data to the console
+
+  ```js
+    async function submitOrder(e) {
+      e.preventDefault();
+      setLoading(true);
+      setError(null);
+      setMessage(null);
+
+      const body = {
+        order
+        total: formatMoney(calculateOrderTotal(order, pizzas)),
+        name: values.name,
+        email: values.email,
+      };
+
+      console.log(body);
+    }
+  ```
+
+- Go to the `order` page
+- Fill the `form` and submit the data
+- You should see that the `submit` button changes the message
+- Check your browser console
+- You should see the data that you `submit` on the `form` but check the `order` array of objects; we actually need a little more information about the `order` itself so we need to apply some formating to get what we want
+- Create a new file on the `utils` directory call `attachNameAndPrices.js`
+- Import the `calculatePizzaPrice` and `formatMoney` functions
+  ```js
+  import calculatePizzaPrice from "./calculatePizzaPrice";
+  import formatMoney from "./formatMoney";
+  ```
+- Export a function call `attachNameAndPrices` that recive the `order` and `pizzas`
+  `export default function attachNameAndPrices(order, pizzas) {}`
+- Return the result of a `map` function of the `order`
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {});
+  }
+  ```
+- Then find the `pizza` that match with the current `item.id`
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {
+      const pizza = pizzas.find((singlePizza) => singlePizza.id === item.id);
+    });
+  }
+  ```
+- Now return the following object
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {
+      const pizza = pizzas.find((singlePizza) => singlePizza.id === item.id);
+      return {
+        ...item,
+        name: pizza.name,
+        thumbnail: pizza.image.asset.fluid.src,
+        price: formatMoney(calculatePizzaPrice(pizza.price, item.size)),
+      };
+    });
+  }
+  ```
+  This will give use more information about the current `order`
+- Go back to your `usePizza` and import the `attachNameAndPrices` function
+- Use on the `body` constant the `attachNameAndPrices` function
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    console.log(body);
+  }
+  ```
+
+- Go to the `order` page
+- Fill the `form` and `submit` the data
+- Check on your browser console
+- The `order` data should be updated to the new structure
+- Now we need to send the data to our `serverless` function and to do this we need to make a request that will have our `serverless` function's URL but we don't want to hardcode the base of this URL because in the future we might need to change from `netlify` so we are going to create an `environment variable` to do it. Go to your `.env` file
+- Create the following variable
+  `GATSBY_SERVERLESS_BASE=http://localhost:8888/netlify/functions`
+- Go back to the `usePizza` hook
+- Now we need to send the data to the `serverless` function and use a `fetch` function to make a `post` request and we will send a `JSON` and send the `body` constant as the `body`(Need to send it as a `string`) of the `request`. Remember to use the `await` keyword
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+  }
+  ```
+
+- Now we need to have the actual content of the `response` so we need to wait for it and turn it into a `JSON`
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const text = JSON.parse(await res.text());
+  }
+  ```
+
+- Now we need to check if everything goes as expected with the request and if not we will set the `error` and in both cases, the `loading` should be stopped
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const text = JSON.parse(await res.text());
+
+    if (res.status >= 400 && res.status < 600) {
+      setLoading(false);
+      setError(text.message);
+    } else {
+      setLoading(false);
+      setMessage("Success! Come on down for your pizza");
+    }
+  }
+  ```
+
+  All status `errors` of response above `400`(including `400`) and less of `600` means that something when wrong
+
+- Now go back to the `order` page component and above the `submit` button; add a `div` that show an `error` if it exists
+  ```js
+  <fieldset>
+    <h3>...</h3>
+    <div>{error ? <p>Error: {error}</p> : ""}</div>
+    <button type="submit" disabled={loading}>
+      ...
+    </button>
+  </fieldset>
+  ```
+- Then before the `return` statement add a condition that `return` a `p` tag if there is a `message`
+
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    if (message) {
+      return <p>{message}</p>;
+    }
+
+    return (...);
+  }
+  ```
+
+This is the `client` side part so this means that it actually doesn't work because we need to prepare the `serverless` function to receive this data and send the `email` and that will be handle in the next section.
