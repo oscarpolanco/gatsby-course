@@ -5787,3 +5787,119 @@ If you take a look at the `react` dev tool at the top of the components you will
     );
   }
   ```
+
+### Intro to serverless functions
+
+When you build with `gatsby` it will take out the `HTML`; `CSS` and `js` in order to handle all the functionality but if you need to do something that needs to happen at the `server` side this will not be possible in `gatsby` unless you work with `serverless functions` that are very similar to running a function in a `server` but instead of having a configure `server` is just a function that runs then shuts itself down after the fact. You can use `serverless` functions with a lot of frameworks just need an URL that you can ping. We are going to be using are [netlify functions](https://docs.netlify.com/functions/overview/) because `Netlify` is very good at hosting `gatsby` apps and offers to host `serverless` functions(Everything that we are going to write are just `Nodejs` functions so you can host on the service of your choosing)
+
+- First; on the `root` of your `gatsby` directory create a file called ` netlify.toml`
+- Now on the `root` of the `gatsby` directory create a folder called `functions`
+- Then inside of the `netlify.toml` you need to tell `netlify` where your `functions` are
+  ```bash
+  [build]
+    functions = "functions/"
+  ```
+- To `start` your local server we use the command `npm start` but know we need another script to run our local server(Is already defined on the `package.json` on the root of the `gatsby` directory) that will run the `start` command and set everything so you can run your `serverless` functions. On your terminal use the `npm run netlify`
+- Now we are going to create our first function; go to the `functions` directory create a folder call `hello`
+- Inside of the `hello` folder create a file with the same name as the folder: `hello.js`
+- Inside of the `hello` file we are going to create a `handler`(That are `Amazon` serverless functions under de hook; `AWS lambda` is the official name).
+  ```js
+  exports.handler = async (event, context) => {
+    console.log(event);
+    return {
+      statusCode: 200,
+      body: "Hello!!",
+    };
+  };
+  ```
+  Here you will return an object that represents the `success` status and a body that will have `hello` as part of the response. You can check what the `event` have on the console
+- Restart your local server
+- Go to this URL: `http://localhost:8888/.netlify/functions/hello`
+- You should see the `hello` message
+- Now that we see the basics we can continue with our main task; that is to create a `serverless` function that sends us an email; so go to the `functions` directory and create a folder call `placeOrder`
+- Inside of this directory create a file called `placeOrder.js`
+- Sometimes the `serverless` functions are so big or you want to encapsulate all logic related to the function in its own directory that you will choose to use a `package.json` in the function directory and you can do this. On your console go to the `functions` directory
+- Use the `init` command to create the `package.json`: `npm init`
+- Then install the [nodemailer](https://nodemailer.com/about/) dependency: `npm install nodemailer`
+- Now go to the `placeOrder.js`
+- Require `nodemailer`: `const nodemailer = require('nodemailer');`
+  At this moment we can't use the `ES6` import sintax
+- Now we need to create what is call [transport](https://nodemailer.com/smtp/)
+  ```js
+  const transporter = nodemailer.createTransport({});
+  ```
+- Then we need to put the credentials to connect with transactional email services(Service that its main purpose is to send emails for you).
+
+  Examples: [Postmark](https://postmarkapp.com/) and [Sengrid](https://sendgrid.com/)
+
+  But for this example, we will use [Ethereal](https://ethereal.email/) which is a service created by the `nodemailer` team to test a temporary email account. So go to the `Ethereal` site and click on the create an account button
+
+- Copy the `nodemailer` configuration
+- Paste it on the `trasporter`
+  ```js
+  const transporter = nodemailer.createTransport({
+    host: "your_etherial_host",
+    port: 587,
+    auth: {
+      user: "your_ethereal_user",
+      pass: "your_ethereal_password",
+    },
+  });
+  ```
+- Since we are going to update this configuration depending the enviroment we need to add some variable to our `.env` file
+  ```bash
+  MAIL_HOST="your_etherial_host"
+  MAIL_USER="your_ethereal_user"
+  MAIL_PASS="your_ethereal_password"
+  ```
+  Remember not to add the `GATSBY_` prefix because it will expose the variables to the client site browser if you put it
+- Go back to the `placeOrder` file and update the `transporter` configuration object to use these variables
+  ```js
+  const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: 587,
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  });
+  ```
+- Now let's create our `handler`
+  ```js
+  exports.handler = async (event, context) => {};
+  ```
+- Inside of our `handler` use the `transporter sendMail` function with the following configuration(Remenber to put `await` before) and the respose store it in a constant
+  ```js
+  exports.handler = async (event, context) => {
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: "orders@example.com",
+      subject: "New order!",
+      html: `<p>Yor new pizza order is here!</p>`,
+    });
+  };
+  ```
+- Finally; return the `status` code and the respose on the email `request` as a `body`property
+
+  ```js
+  exports.handler = async (event, context) => {
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: "orders@example.com",
+      subject: "New order!",
+      html: `<p>Yor new pizza order is here!</p>`,
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(info),
+    };
+  };
+  ```
+
+  We need to `stringify` to actually see the request information on the browser
+
+- Restart your local server
+- On your browser go to `http://localhost:8888/.netlify/functions/placeOrder`
+- You should see the response on your browser
+- Check the inbox of your [Ethereal](https://ethereal.email/messages) account and you should see the email with the content that we send
