@@ -35,6 +35,13 @@ function generateOrderEmail({ order, total }) {
 exports.handler = async (event, context) => {
   const body = JSON.parse(event.body);
 
+  if (body.mapleSyrup) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ message: 'Robot detected' }),
+    };
+  }
+
   const requiredFields = ['email', 'name', 'order'];
 
   for (const field of requiredFields) {
@@ -44,6 +51,15 @@ exports.handler = async (event, context) => {
         statusCode: 400,
         body: JSON.stringify({
           message: `Oops! You are missing the ${field} field`,
+        }),
+      };
+    }
+
+    if (!body.order.length) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: `Why would you order nothing?!`,
         }),
       };
     }

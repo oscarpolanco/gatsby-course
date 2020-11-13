@@ -6287,9 +6287,9 @@ We got the client-side part of the code ready to send the submitted data to our 
         ${order
           .map(
             (item) => `<li>
-        <img src="${item.thumbnail}" alt="${item.name}" />
-        ${item.size} ${item.name} - ${item.price}
-      </li>`
+      <img src="${item.thumbnail}" alt="${item.name}" />
+      ${item.size} ${item.name} - ${item.price}
+    </li>`
           )
           .join("")}
       </ul>
@@ -6339,3 +6339,190 @@ We got the client-side part of the code ready to send the submitted data to our 
 - Now go to the `order` page and fill the `form` and submit the data
 - Go to your `ethereal` account inbox
 - You should have a new email with the structure that we defined before
+
+### Setting error, loading and success states
+
+Now that we can have sent the `email` with the `order` data to the user we can finish setting the states on the `client` that are invole on the submit process
+
+- First; go to the `placeOrder` file and add the following condition on the `for of`
+
+  ```js
+  exports.handler = async (event, context) => {
+    await wait(5000);
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+
+      if (!body.order.length) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Why would you order nothing?!`,
+          }),
+        };
+      }
+    }
+    ...
+  };
+  ```
+
+  This won't allow to send an `order` without a `pizza`
+
+- Now go to the `order` page component and add a `disabled` property on every `fieldset` so it value will be the `loading` state
+
+```js
+export default function OrderPage({ data }) {
+  ...
+  return (
+    <>
+      <SEO title="Order Pizza!" />
+      <OrderStyles onSubmit={submitOrder}>
+        <fieldset disabled={loading}>
+          <legend>Your info</legend>
+          ...
+        </fieldset>
+        <fieldset className="menu" disabled={loading}>
+          <legend>Menu</legend>
+          ...
+        </fieldset>
+        <fieldset className="order" disabled={loading}>
+          <legend>Order</legend>
+          ...
+        </fieldset>
+        <fieldset disabled={loading}>
+          <h3>
+            Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+          </h3>
+          ...
+        </fieldset>
+      </OrderStyles>
+    </>
+  );
+}
+```
+
+This will `disable` the entire content of every `fieldset` when the `order` is beng `process` and when it finish to sent the `email` it enable back to it
+
+- Go to the `order` page and test the `disable` fields and the `error` when you don't sent a `pizza` in the `order`
+
+### Creating honey pot to defend against bots
+
+As a precaution we need to set something that prevents the `bots` to maliciously fill the `form` and begin to send multiples request; there are a lot of ways to handle this issue like the `captcha` but we are going to implement one of the easiest ways that is call [honey pot](<https://en.wikipedia.org/wiki/Honeypot_(computing)>)
+
+- First; go to the `order` page component and copy the `email` input
+- Bellow the `email` input paste the new input
+- Change the `type`, `name` and `value` to another thing like `mapleSyrup`(Could be whatever you want but don't use any reference to `honey` that the bots are smart enough to detect those)
+  ```js
+  export default function OrderPage({ data }) {
+   ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles onSubmit={submitOrder}>
+          <fieldset disabled={loading}>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={values.name}
+              onChange={updateValue}
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={values.email}
+              onChange={updateValue}
+            />
+            <input
+              type="mapleSyrup"
+              name="mapleSyrup"
+              value={values.mapleSyrup}
+              onChange={updateValue}
+              className="mapleSyrup"
+            />
+          </fieldset>
+          ...
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go to the `useForm` definition and add a new `state` for the new input
+  ```js
+  export default function OrderPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    const { values, updateValue } = useForm({
+    name: '',
+    email: '',
+    mapleSyrup: '',
+    });
+    return (...);
+  }
+  ```
+- Now go to `placeOrder` file
+- Go to the `usePizza` hook and add the `mapleSyrup` state to the `body` that we sent to the `serverless` function
+  ```js
+  export default function usePizza({ pizzas, values }) {
+    ...
+    async function submitOrder(e) {
+      ...
+      const body = {
+        order: attachNameAndPrices(order, pizzas),
+        total: formatMoney(calculateOrderTotal(order, pizzas)),
+        name: values.name,
+        email: values.email,
+        mapleSyrup: values.mapleSyrup,
+      };
+        ...
+    }
+    ...
+  }
+  ```
+- Add a condition where if `body` have the `mapleSyrup` input return a `400` status code and a message
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    if (body.mapleSyrup) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Robot detected' }),
+      };
+    }
+    ...
+  };
+  ```
+
+- Go to your browser and fill all the inputs including the `mapleSyrup` input bellow the `email` input
+- Submit the form data
+- You should receive an `error` message and don't receive an `email`
+- Finally go to `OrderStyles` in the `styles` directory and hide the `mapleSyrup` input
+  ```js
+  const OrderStyles = styled.form`
+    ... fieldset {
+      ... &.order,
+      &.menu {
+        grid-column: span 1;
+      }
+      .mapleSyrup {
+        display: none;
+      }
+    }
+  `;
+  ```
+  We use `display: none` because the `bots` can't actually check by the `CSS` if the `input` is valid and these `inputs` automatically won't be reached by the `scream readers`
+- Go to the `order` page and you should not the `mapleSyrup` input
