@@ -6082,7 +6082,7 @@ At this moment we have a `serverless` function that sends us an ʻemail` but onl
 - The `order` data should be updated to the new structure
 - Now we need to send the data to our `serverless` function and to do this we need to make a request that will have our `serverless` function's URL but we don't want to hardcode the base of this URL because in the future we might need to change from `netlify` so we are going to create an `environment variable` to do it. Go to your `.env` file
 - Create the following variable
-  `GATSBY_SERVERLESS_BASE=http://localhost:8888/netlify/functions`
+  `GATSBY_SERVERLESS_BASE=http://localhost:8888/.netlify/functions`
 - Go back to the `usePizza` hook
 - Now we need to send the data to the `serverless` function and use a `fetch` function to make a `post` request and we will send a `JSON` and send the `body` constant as the `body`(Need to send it as a `string`) of the `request`. Remember to use the `await` keyword
 
@@ -6209,3 +6209,133 @@ At this moment we have a `serverless` function that sends us an ʻemail` but onl
   ```
 
 This is the `client` side part so this means that it actually doesn't work because we need to prepare the `serverless` function to receive this data and send the `email` and that will be handle in the next section.
+
+### Codign our serverless function
+
+We got the client-side part of the code ready to send the submitted data to our `serverless` function so we can begin with receiving it and format the email that we will send.
+
+- First; go to the `placeOrder` file in the `functions/placeOrder/` directory
+- On the `handler` function create an array that has every field `name` and the `order`
+  `const requiredFields = ['email', 'name', 'order'];`
+  We will use this array to validate if something is missing in the submitted data
+- Now use a `for of` to loop throw every the array and console the follwoing
+
+  ```js
+  exports.handler = async (event, context) => {
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+    }
+    ...
+  }
+  ```
+
+  We use the `for of` instead of a `map` because our intention is to return immediately we find that one of the information's are missing and a `map` create another function with another scope and we can't return immediately
+
+- Restart your local server
+- Go to the order page
+- Add a pizza to the `order`(Make sure that you don't fill the `name` and `email`)
+- Submit the `form`
+- Go to your terminal and you should see the message of the `for of`
+- Now we need to get the information sent by the `client`; use the `JSON.parse` function on the `body` property of the `event` object
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+    }
+    ...
+  }
+  ```
+
+- Then on the `for of` create a condition where if the `field` doesn't exist on the `body` return a `400` status and a message
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+    }
+    ...
+  }
+  ```
+
+- At this moment we have the data that we need to send the `email` but we need to format it better so before the `handler`; create a function call `generateOrderEmail` that receive and object with an `order` and `total` property
+  `function generateOrderEmail({ order, total }) {}`
+- Return the following
+  ```js
+  function generateOrderEmail({ order, total }) {
+    return `<div>
+      <h2>Your recent order for ${total}</h2>
+      <p>Please start walking over, we will have your order ready in the next 20 mins.</p>
+      <ul>
+        ${order
+          .map(
+            (item) => `<li>
+        <img src="${item.thumbnail}" alt="${item.name}" />
+        ${item.size} ${item.name} - ${item.price}
+      </li>`
+          )
+          .join("")}
+      </ul>
+      <p>Your total is <strong>$${total}</strong> due at pickup</p>
+      <style>
+        ul {
+          list-style: none;
+        }
+      </style>
+    </div>`;
+  }
+  ```
+  Here we add all ther data and structure that we are going to be sending in the email
+- Now go to the `transporter` configuration object add the recipient `name` and `email` on the `to` property and use the `generateOrderEmail` in the `html` property sending the proper parameters
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ["email", "name", "order"];
+
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+    }
+
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: `${body.name} <${body.email}>, order@example.com`,
+      subject: "New order!",
+      html: generateOrderEmail({ order: body.order, total: body.total }),
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: "Success" }),
+    };
+  };
+  ```
+
+- Now go to the `order` page and fill the `form` and submit the data
+- Go to your `ethereal` account inbox
+- You should have a new email with the structure that we defined before
