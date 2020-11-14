@@ -6287,9 +6287,9 @@ We got the client-side part of the code ready to send the submitted data to our 
         ${order
           .map(
             (item) => `<li>
-      <img src="${item.thumbnail}" alt="${item.name}" />
-      ${item.size} ${item.name} - ${item.price}
-    </li>`
+    <img src="${item.thumbnail}" alt="${item.name}" />
+    ${item.size} ${item.name} - ${item.price}
+  </li>`
           )
           .join("")}
       </ul>
@@ -6526,3 +6526,193 @@ As a precaution we need to set something that prevents the `bots` to maliciously
   ```
   We use `display: none` because the `bots` can't actually check by the `CSS` if the `input` is valid and these `inputs` automatically won't be reached by the `scream readers`
 - Go to the `order` page and you should not the `mapleSyrup` input
+
+### Creating a one-off store setting page
+
+Some times you want a settings `page` where you control a specific `page` and this is what is call `options` or `one-off` pages this means that they still need to be store on the database but there is not going to be multiples of then; we will have just once. In this example, we will have one of these setting pages for the `homepage` where we are going to have the available `slicesmasters` and the `pizzas` available by `slices`, and all of this content will be control on `sanity`.
+
+- First; go to the `sanity/schema` directory
+- Create a new file call `storeSettings.js`
+- Import `MdStore` from `react-icons/md`
+  `import { MdStore as icon } from 'react-icons/md';`
+- Now export an object
+  `export default {}`
+- Add the following configuration
+  ```js
+  export default {
+    name: "storeSettings",
+    title: "Settings",
+    type: "document",
+    icon,
+    fields: [],
+  };
+  ```
+  - `name`: Will be the `name` that we will target the `schema` on the `code`
+  - `title`: The `name` that we will show to the user
+  - `type`: The `type` of the `schema`
+  - `icon`: The image that we will show to the user at the side of the `title`
+  - `fields`: An `array` to define all the `fields` that will have the `schema`
+- Then on the `fields` array add the following objects
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {
+        name: 'name',
+        title: 'Store name',
+        type: 'string',
+        description: 'Name of the store',
+      },
+      {
+        name: 'slicemaster',
+        title: 'Slicemasters Currently Slicing',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'person' }] }],
+      },
+      {
+        name: 'hotSlices',
+        title: 'Hot Slices available in the case',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'pizza' }] }],
+      },
+    ]
+  }
+  ```
+
+  This will add 3 `fields` to our `schema`:
+
+  - `name` field: This will be presented on the `sanity` dashboard as the `name` of each entry that you add
+  - `slicemaster` field: This will create a `field` that is related to the `person` schema and will allow us to add multiple `persons`
+  - `hotSlices` field: This will create a `field` that will be related to the `pizza` schema and will allow us to add multiple `pizzas`
+
+  And the properties of the `fields` are:
+
+  - `name`: Name that we will target by code
+  - `title`: The name of the field that we are going to show on the `sanity` dashboard
+  - `type`: The type of the `field` and in this case we will have for the `name` a `string` and for the others an `array`
+  - `of`: This defines the elements inside of the `array` of the current `field`. In this case, we will have an `array` of objects that will be `reference` to a `schema` that bring multiple `items`
+
+- Go to your `schema.js` and import the `storeSettings`
+  `import storeSettings from './storeSettings';`
+- Then use the `storeSettings` in the `schemaTypes.concat` function
+  ```js
+  export default createSchema({
+    name: "default",
+    types: schemaTypes.concat([pizza, topping, person, storeSettings]),
+  });
+  ```
+- Start your local `sanity` server
+- On your `sanity`dashboard you should have a `settings` option(DO NOT ADD ANYTHING YET)
+- Now we need to prevent that the user creates multiple stores so we need to change the `sidebar` instead of having a `settings` options; we need an option that goes directly to the `edit` screen when is selected. So on the root of the `sanity` directory create a new file call `sidebar.js`
+- Inside of the file import `react` and `S`(A `sanity` specific)
+  ```js
+  import React from "react";
+  import S from "@sanity/desk-tool/structure-builder";
+  ```
+- Export a function call `sideBar`
+  `export default function Sidebar() {}`
+- Now go to the `sanity.json` file and on the `parts` property add the following:
+  ```js
+  "parts": [
+    ...
+    {
+      "name": "part:@sanity/desk-tool/structure",
+      "path": "./sidebar.js"
+    }
+  ]
+  ```
+  This will let know `sanity` that use our custom `sidebar` and you need to restart your local server when you change this file
+- Go back to the `sidebar` file
+- Return the `list` function of the `S` object from `sanity`
+  ```js
+  export default function Sidebar() {
+    return S.list();
+  }
+  ```
+- Then we are going to call the `title` function with our custom `title`(This will be the `title` of our custom `sidebar`)
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`);
+  }
+  ```
+- You should see on your browser that the `title` change from `content` to `Slick's Slices`(Don't worry if you don't see any content on your dashboard)
+- Now we are going to call the `items` function send an `array` of `listItem`(Create a new sub `item`)
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([S.listItem()]);
+  }
+  ```
+- For the `sub-item` we have a `title`
+  ```js
+  export default function Sidebar() {
+    return S.list()
+      .title(`Slick's Slices`)
+      .items([S.listItem().title("Home Page")]);
+  }
+  ```
+- Go to your browser and now you can see that you only have one `item` call `Home Page`
+- Then we are going to add an `icon` to the `Home Page` item
+  ```js
+  export default function Sidebar() {
+    return S.list()
+      .title(`Slick's Slices`)
+      .items([
+        S.listItem()
+          .title("Home Page")
+          .icon(() => <strong>🔥</strong>),
+      ]);
+  }
+  ```
+- You should see the new `icon` on your browser
+- Now we need to add the `child` of this option in this case will be the `editor` page
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor())
+    ]);
+  }
+  ```
+- Then we will use the `storeSettings schema` to get all the `fields` that we need on the editor page and linked to a `documentId`
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown')))
+    ]);
+  }
+  ```
+  If you see a previews version of your `sanity` dashboard and you click on one of the entry that you did before; you will see a long line of characters at the end of the URL and that is the `document id` and at this case, we send our `document id` that now won't be a random `string` of numbers
+- Now we need to add all the missing `document` items that we have before
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown'))),
+        ...S.documentTypeListItems()
+    ]);
+  }
+  ```
+  This will add for use the other `document` items but you still have the `Settings` option on the `sibebar`
+- The we need to filter the `documentTypeListItems` to eliminate the `Settings` option
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown'))),
+        ...S.documentTypeListItems().filter(
+        (item) => item.getId() !== `storeSettings`
+      ),
+    ]);
+  }
+  ```
+- Now you can see that the `Home Page` item will let you add the `name` of one store; `slicesmaster` and `pizzas`(Add some and on the next section we will use it on the frontend)
