@@ -5657,3 +5657,1322 @@ At this moment we can create our order but we still need 2 things the `total amo
 - Go to the `order` page
 - Click on one of the `pizza` buttons
 - The result `price` should be updated each time you add a `pizza` to the `order` and have the correct format
+
+## Module 11: Serverless functions
+
+If you notice when you add a `pizza` to the `order` and change the page using for example the `nav` at the top of the file; the `order` will disappear when you get back to the `order` page because `gatsby` will `umount` the component when you change the page and the `state` will be lost so we need to handle the `order` state differently than other states. We will need to put the `order` state to the highest level that we can so when we `unmount` the `order` page component the state will not be affected.
+
+If you take a look at the `react` dev tool at the top of the components you will see a `Root` component that doesn't change when you navigate between pages and with a hook that `gatsby` allows to use it we manipulate that `Root` component. We also will be using the [context API](https://reactjs.org/docs/context.html) that will help us to stick the state to a higher level.
+
+- First; on the `components` directory create a new file call `OrderContext.js`
+- In this newly created file import `React` and `useState`
+  `import React, { useState } from 'react';`
+- Then use `React.createContext` to create a `context` for the `order`
+  `const OrderContext = React.createContext();`
+- Now we need a `Provider`(Is a component that live on a higther level)
+  `export function OrderProvider({ children }) {}`
+- Inside of the `OrderProvider` create a state for the `order`
+  ```js
+  export function OrderProvider({ children }) {
+    const [order, setOrder] = useState([]);
+  }
+  ```
+- Return a tag of `OrderContext.Provider` that wrap the `children` property
+  ```js
+  export function OrderProvider({ children }) {
+    const [order, setOrder] = useState([]);
+    return (
+      <OrderContext.Provider value={[order, setOrder]}>
+        {children}
+      </OrderContext.Provider>
+    );
+  }
+  ```
+  We need to explicit send the `state` and the `setState` function via the `value` property to be avilable to the `cosumer` childrens
+- Then export the `OrderContext` after the `OrderProvider` component
+  `export default OrderContext;`
+- Go to your `gatsby-browser` and import the `OrderProvider` component
+  `import { OrderProvider } from './src/components/OrderContext';`
+- Export a function call `wrapRootElement`(Need to use this exact name) that recive an object with an `element` property as a parameter
+  `export function wrapRootElement({ element }) {}`
+- Return the `OrderProvider` component wrapping the `element` parameter
+  ```js
+  export function wrapRootElement({ element }) {
+    return <OrderProvider>{element}</OrderProvider>;
+  }
+  ```
+- Go to the `gatsby-ssr.js` and follow the same steps that you just did on the `gatsby-browser` file
+- Now go to your `usePizza` hook in the `utils` directory and import `useContext` from `react` and remove `useState`
+  `import { useContext } from 'react';`
+- Import `OrderContext`
+  `import OrderContext from '../components/OrderContext';`
+- Replace the `useState` that was use to create the `order` state with the `useContext` hook using the `OrderContext` as a default value
+  `const [order, setOrder] = useContext(OrderContext);`
+- Finally; start your local server
+- Go to the `order` page
+- Add a `pizza` to your `order`
+- Click on another page in the `nav`
+- Go back to the `order` page clicking on the `order` option in the `nav`
+- You should see that you still have the `pizza` that you add to your `order`
+
+#### Note:
+
+- If you refresh the page the data will be gone
+
+### Clean up console warnings
+
+- Go to the `PizzaOrder` file on the component directory
+- Go to the `MenuItemsStyles` tag and update the `key`
+  ```js
+  export default function PizzaOrder({ order, pizzas, removeFromOrder }) {
+    return (
+      <>
+        {order.map((singleOrder, index) => {
+          const pizza = pizzas.find((pizza) => pizza.id === singleOrder.id);
+          return (
+            <MenuItemsStyles key={`${singleOrder.id}-${index}`}>
+              ...
+            </MenuItemsStyles>
+          );
+        })}
+      </>
+    );
+  }
+  ```
+  This will allow us to add more than one time a `pizza` to the `order` and still have a `unique` id and the `react` warning will not be shown on the `console`
+- Then go to the `order` page component
+- On the button of the different `size` prices; add a `unique` key
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles>
+          <fieldset>
+            <legend>Your info</legend>
+            ...
+          </fieldset>
+          <fieldset className="menu">
+            <legend>Menu</legend>
+            {pizzas.map((pizza) => (
+              <MenuItemsStyles key={pizza.id}>
+                ...
+                <div>
+                  {['S', 'M', 'L'].map((size) => (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => addToOrder({ id: pizza.id, size })}
+                    >
+                      {size} {formatMoney(calculatePizzaPrice(pizza.price, size))}
+                    </button>
+                  ))}
+                </div>
+              </MenuItemsStyles>
+            ))}
+          </fieldset>
+          <fieldset className="order">
+            <legend>Order</legend>
+            ...
+          </fieldset>
+          <fieldset>
+            <h3>
+              Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+            </h3>
+            <button type="submit">Order Ahead</button>
+          </fieldset>
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+
+### Intro to serverless functions
+
+When you build with `gatsby` it will take out the `HTML`; `CSS` and `js` in order to handle all the functionality but if you need to do something that needs to happen at the `server` side this will not be possible in `gatsby` unless you work with `serverless functions` that are very similar to running a function in a `server` but instead of having a configure `server` is just a function that runs then shuts itself down after the fact. You can use `serverless` functions with a lot of frameworks just need an URL that you can ping. We are going to be using are [netlify functions](https://docs.netlify.com/functions/overview/) because `Netlify` is very good at hosting `gatsby` apps and offers to host `serverless` functions(Everything that we are going to write are just `Nodejs` functions so you can host on the service of your choosing)
+
+- First; on the `root` of your `gatsby` directory create a file called ` netlify.toml`
+- Now on the `root` of the `gatsby` directory create a folder called `functions`
+- Then inside of the `netlify.toml` you need to tell `netlify` where your `functions` are
+  ```bash
+  [build]
+    functions = "functions/"
+  ```
+- To `start` your local server we use the command `npm start` but know we need another script to run our local server(Is already defined on the `package.json` on the root of the `gatsby` directory) that will run the `start` command and set everything so you can run your `serverless` functions. On your terminal use the `npm run netlify`
+- Now we are going to create our first function; go to the `functions` directory create a folder call `hello`
+- Inside of the `hello` folder create a file with the same name as the folder: `hello.js`
+- Inside of the `hello` file we are going to create a `handler`(That are `Amazon` serverless functions under de hook; `AWS lambda` is the official name).
+  ```js
+  exports.handler = async (event, context) => {
+    console.log(event);
+    return {
+      statusCode: 200,
+      body: "Hello!!",
+    };
+  };
+  ```
+  Here you will return an object that represents the `success` status and a body that will have `hello` as part of the response. You can check what the `event` have on the console
+- Restart your local server
+- Go to this URL: `http://localhost:8888/.netlify/functions/hello`
+- You should see the `hello` message
+- Now that we see the basics we can continue with our main task; that is to create a `serverless` function that sends us an email; so go to the `functions` directory and create a folder call `placeOrder`
+- Inside of this directory create a file called `placeOrder.js`
+- Sometimes the `serverless` functions are so big or you want to encapsulate all logic related to the function in its own directory that you will choose to use a `package.json` in the function directory and you can do this. On your console go to the `functions` directory
+- Use the `init` command to create the `package.json`: `npm init`
+- Then install the [nodemailer](https://nodemailer.com/about/) dependency: `npm install nodemailer`
+- Now go to the `placeOrder.js`
+- Require `nodemailer`: `const nodemailer = require('nodemailer');`
+  At this moment we can't use the `ES6` import sintax
+- Now we need to create what is call [transport](https://nodemailer.com/smtp/)
+  ```js
+  const transporter = nodemailer.createTransport({});
+  ```
+- Then we need to put the credentials to connect with transactional email services(Service that its main purpose is to send emails for you).
+
+  Examples: [Postmark](https://postmarkapp.com/) and [Sengrid](https://sendgrid.com/)
+
+  But for this example, we will use [Ethereal](https://ethereal.email/) which is a service created by the `nodemailer` team to test a temporary email account. So go to the `Ethereal` site and click on the create an account button
+
+- Copy the `nodemailer` configuration
+- Paste it on the `trasporter`
+  ```js
+  const transporter = nodemailer.createTransport({
+    host: "your_etherial_host",
+    port: 587,
+    auth: {
+      user: "your_ethereal_user",
+      pass: "your_ethereal_password",
+    },
+  });
+  ```
+- Since we are going to update this configuration depending the enviroment we need to add some variable to our `.env` file
+  ```bash
+  MAIL_HOST="your_etherial_host"
+  MAIL_USER="your_ethereal_user"
+  MAIL_PASS="your_ethereal_password"
+  ```
+  Remember not to add the `GATSBY_` prefix because it will expose the variables to the client site browser if you put it
+- Go back to the `placeOrder` file and update the `transporter` configuration object to use these variables
+  ```js
+  const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: 587,
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  });
+  ```
+- Now let's create our `handler`
+  ```js
+  exports.handler = async (event, context) => {};
+  ```
+- Inside of our `handler` use the `transporter sendMail` function with the following configuration(Remenber to put `await` before) and the respose store it in a constant
+  ```js
+  exports.handler = async (event, context) => {
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: "orders@example.com",
+      subject: "New order!",
+      html: `<p>Yor new pizza order is here!</p>`,
+    });
+  };
+  ```
+- Finally; return the `status` code and the respose on the email `request` as a `body`property
+
+  ```js
+  exports.handler = async (event, context) => {
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: "orders@example.com",
+      subject: "New order!",
+      html: `<p>Yor new pizza order is here!</p>`,
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(info),
+    };
+  };
+  ```
+
+  We need to `stringify` to actually see the request information on the browser
+
+- Restart your local server
+- On your browser go to `http://localhost:8888/.netlify/functions/placeOrder`
+- You should see the response on your browser
+- Check the inbox of your [Ethereal](https://ethereal.email/messages) account and you should see the email with the content that we send
+
+### Modifying our custom jook to send the order data
+
+At this moment we have a `serverless` function that sends us an ʻemail` but only have an example content and we want to have the actual order information in the` body` of that ʻemail` so we need to prepare the `client `side of the application to send this data to our` serverless` function and that will be the main focus of this section.
+
+- First; go to the ʻusePizza`hook
+- Import ʻuseState`from`react`ʻImport {useContext, useState} from 'react';`
+- Now add the following `states` inside of the ʻusePizza` function and return it ``  `js
+  export default function usePizza ({pizzas, values}) {
+  const [order, setOrder] = useContext (OrderContext);
+  const [error, setError] = useState ();
+  const [loading, setLoading] = useState (false);
+  const [message, setMessage] = useState ('');
+  ...
+
+  return {
+  order,
+  addToOrder,
+  removeFromOrder,
+  error,
+  loading,
+  message,
+  }
+  }
+  ``'' This will be`states` that will handle:
+
+  - Errors submitting the data (ʻerror` state)
+  - Time that we have a response from our `serverless` function (` loading` state)
+  - Message on successful submit (`message` state)
+
+- Go to the ʻorder`page component and add the new`states` on the ʻusePizza` hook definition
+  `` `js export default function OrderPage ({data}) { const pizzas = data.pizzas.nodes; const {values, updateValue} = useForm ({ name: '', email: '', }); const { order, addToOrder, removeFromOrder, error, message, loading, } = usePizza ({ pizzas, values, }); ... } `` ''
+- Then we can begin to work with the `loading` state. First; we need to add the `disabled` property when the ʻorder` is processing to the` submit` button `` `js
+  <button type = "submit" disabled = {loading}>
+  'Order Ahead'
+  </button>
+  `` ''
+- Change the message of the button to `Place order ...` when we processing the ʻorder` `` `js
+  <button type = "submit" disabled = {loading}>
+  {loading? 'Place Order ...': 'Order Ahead'}
+  </button>
+  `` ''
+- Now we need to add a `handler` to control when someone clicks on the` submit` button. Go to the ʻusePizza` hook and inside of the ʻusePizza` function creates a function call `submitOrder` that receive the ʻevent` as a parameter and return it `` `js
+  export default function usePizza ({pizzas, values}) {
+  ...
+  async function submitOrder (e) {}
+
+  return {
+  ...
+  submitOrder,
+  };
+  }
+  ``'' Since we are going to target our`serverless` function from here we will need the ʻasync` keyword
+
+- Go back to the ʻorder`page component and add the`submitOrder` function to the ʻusePizza` hook definition
+  `` `js export default function OrderPage ({data}) { const pizzas = data.pizzas.nodes; const {values, updateValue} = useForm ({ name: '', email: '', }); const { order, addToOrder, removeFromOrder, error, message, loading, submitOrder, } = usePizza ({ pizzas, values, }); ... } `` ''
+- Now add the `submit` property to ʻOrderStyles` (That represent our` form`tag) and use the`submitOrder` as it value `` `js
+  export default function OrderPage ({data}) {
+  ...
+  return (
+  <>
+  <SEO title = "Order Pizza!" />
+  <OrderStyles onSubmit = {submitOrder}>
+  ...
+  </OrderStyles>
+  </>
+  );
+  }
+  `` ''
+- Now start your local server and go to the ʻorder` page
+- Click on the submit button
+- You should see that some parameters are added to the URL and we want to prevent this
+- Go to the ʻusePizza`hook and inside of the`submitOrder` function add the following: `` `js
+  async function submitOrder (e) {
+  e.preventDefault ();
+  }
+  `` ''
+- Now add the set the `loading` state to` true`; this means that the process of sending the data to our `serverless` function begins and we need to clear any ʻerror` or` messages`that are present on the moment that you`submit` the data `` `js
+  async function submitOrder (e) {
+  e.preventDefault ();
+  setLoading (true);
+  setError (null);
+  setMessage (null);
+  }
+  `` ''
+- Then we need to gather all the data that we need to create the `body` of our ʻemail` but first; rename the ʻinputs` prop to `values`
+  ʻExport default function usePizza ({pizzas, values}) {...} `
+- Go to the ʻorder`page component and use`values` instead of ʻinputs` in the default of the ʻusePizza`hook`const {...} = usePizza ({pizzas, values,});`
+- Import the `formatMoney` and` calculateOrderTotal` functions
+  `` `js import calculateOrderTotal from './calculateOrderTotal'; import formatMoney from './formatMoney'; `` ''
+- Go back to the `usePizza` file and on the `submitOrder` function create a constant call` body` that will have the following structure and print that data to the console
+
+  ```js
+    async function submitOrder(e) {
+      e.preventDefault();
+      setLoading(true);
+      setError(null);
+      setMessage(null);
+
+      const body = {
+        order
+        total: formatMoney(calculateOrderTotal(order, pizzas)),
+        name: values.name,
+        email: values.email,
+      };
+
+      console.log(body);
+    }
+  ```
+
+- Go to the `order` page
+- Fill the `form` and submit the data
+- You should see that the `submit` button changes the message
+- Check your browser console
+- You should see the data that you `submit` on the `form` but check the `order` array of objects; we actually need a little more information about the `order` itself so we need to apply some formating to get what we want
+- Create a new file on the `utils` directory call `attachNameAndPrices.js`
+- Import the `calculatePizzaPrice` and `formatMoney` functions
+  ```js
+  import calculatePizzaPrice from "./calculatePizzaPrice";
+  import formatMoney from "./formatMoney";
+  ```
+- Export a function call `attachNameAndPrices` that recive the `order` and `pizzas`
+  `export default function attachNameAndPrices(order, pizzas) {}`
+- Return the result of a `map` function of the `order`
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {});
+  }
+  ```
+- Then find the `pizza` that match with the current `item.id`
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {
+      const pizza = pizzas.find((singlePizza) => singlePizza.id === item.id);
+    });
+  }
+  ```
+- Now return the following object
+  ```js
+  export default function attachNameAndPrices(order, pizzas) {
+    return order.map((item) => {
+      const pizza = pizzas.find((singlePizza) => singlePizza.id === item.id);
+      return {
+        ...item,
+        name: pizza.name,
+        thumbnail: pizza.image.asset.fluid.src,
+        price: formatMoney(calculatePizzaPrice(pizza.price, item.size)),
+      };
+    });
+  }
+  ```
+  This will give use more information about the current `order`
+- Go back to your `usePizza` and import the `attachNameAndPrices` function
+- Use on the `body` constant the `attachNameAndPrices` function
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    console.log(body);
+  }
+  ```
+
+- Go to the `order` page
+- Fill the `form` and `submit` the data
+- Check on your browser console
+- The `order` data should be updated to the new structure
+- Now we need to send the data to our `serverless` function and to do this we need to make a request that will have our `serverless` function's URL but we don't want to hardcode the base of this URL because in the future we might need to change from `netlify` so we are going to create an `environment variable` to do it. Go to your `.env` file
+- Create the following variable
+  `GATSBY_SERVERLESS_BASE=http://localhost:8888/.netlify/functions`
+- Go back to the `usePizza` hook
+- Now we need to send the data to the `serverless` function and use a `fetch` function to make a `post` request and we will send a `JSON` and send the `body` constant as the `body`(Need to send it as a `string`) of the `request`. Remember to use the `await` keyword
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+  }
+  ```
+
+- Now we need to have the actual content of the `response` so we need to wait for it and turn it into a `JSON`
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const text = JSON.parse(await res.text());
+  }
+  ```
+
+- Now we need to check if everything goes as expected with the request and if not we will set the `error` and in both cases, the `loading` should be stopped
+
+  ```js
+  async function submitOrder(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const body = {
+      order: attachNameAndPrices(order, pizzas),
+      total: formatMoney(calculateOrderTotal(order, pizzas)),
+      name: values.name,
+      email: values.email,
+    };
+
+    const res = await fetch(
+      `${process.env.GATSBY_SERVERLESS_BASE}/placeOrder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const text = JSON.parse(await res.text());
+
+    if (res.status >= 400 && res.status < 600) {
+      setLoading(false);
+      setError(text.message);
+    } else {
+      setLoading(false);
+      setMessage("Success! Come on down for your pizza");
+    }
+  }
+  ```
+
+  All status `errors` of response above `400`(including `400`) and less of `600` means that something when wrong
+
+- Now go back to the `order` page component and above the `submit` button; add a `div` that show an `error` if it exists
+  ```js
+  <fieldset>
+    <h3>...</h3>
+    <div>{error ? <p>Error: {error}</p> : ""}</div>
+    <button type="submit" disabled={loading}>
+      ...
+    </button>
+  </fieldset>
+  ```
+- Then before the `return` statement add a condition that `return` a `p` tag if there is a `message`
+
+  ```js
+  export default function OrderPage({ data }) {
+    ...
+    if (message) {
+      return <p>{message}</p>;
+    }
+
+    return (...);
+  }
+  ```
+
+This is the `client` side part so this means that it actually doesn't work because we need to prepare the `serverless` function to receive this data and send the `email` and that will be handle in the next section.
+
+### Codign our serverless function
+
+We got the client-side part of the code ready to send the submitted data to our `serverless` function so we can begin with receiving it and format the email that we will send.
+
+- First; go to the `placeOrder` file in the `functions/placeOrder/` directory
+- On the `handler` function create an array that has every field `name` and the `order`
+  `const requiredFields = ['email', 'name', 'order'];`
+  We will use this array to validate if something is missing in the submitted data
+- Now use a `for of` to loop throw every the array and console the follwoing
+
+  ```js
+  exports.handler = async (event, context) => {
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+    }
+    ...
+  }
+  ```
+
+  We use the `for of` instead of a `map` because our intention is to return immediately we find that one of the information's are missing and a `map` create another function with another scope and we can't return immediately
+
+- Restart your local server
+- Go to the order page
+- Add a pizza to the `order`(Make sure that you don't fill the `name` and `email`)
+- Submit the `form`
+- Go to your terminal and you should see the message of the `for of`
+- Now we need to get the information sent by the `client`; use the `JSON.parse` function on the `body` property of the `event` object
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+    }
+    ...
+  }
+  ```
+
+- Then on the `for of` create a condition where if the `field` doesn't exist on the `body` return a `400` status and a message
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+    }
+    ...
+  }
+  ```
+
+- At this moment we have the data that we need to send the `email` but we need to format it better so before the `handler`; create a function call `generateOrderEmail` that receive and object with an `order` and `total` property
+  `function generateOrderEmail({ order, total }) {}`
+- Return the following
+  ```js
+  function generateOrderEmail({ order, total }) {
+    return `<div>
+      <h2>Your recent order for ${total}</h2>
+      <p>Please start walking over, we will have your order ready in the next 20 mins.</p>
+      <ul>
+        ${order
+          .map(
+            (item) => `<li>
+  <img src="${item.thumbnail}" alt="${item.name}" />
+  ${item.size} ${item.name} - ${item.price}
+</li>`
+          )
+          .join("")}
+      </ul>
+      <p>Your total is <strong>$${total}</strong> due at pickup</p>
+      <style>
+        ul {
+          list-style: none;
+        }
+      </style>
+    </div>`;
+  }
+  ```
+  Here we add all ther data and structure that we are going to be sending in the email
+- Now go to the `transporter` configuration object add the recipient `name` and `email` on the `to` property and use the `generateOrderEmail` in the `html` property sending the proper parameters
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ["email", "name", "order"];
+
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+    }
+
+    const info = await transporter.sendMail({
+      from: "Slick's Slices <slick@example.com>",
+      to: `${body.name} <${body.email}>, order@example.com`,
+      subject: "New order!",
+      html: generateOrderEmail({ order: body.order, total: body.total }),
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: "Success" }),
+    };
+  };
+  ```
+
+- Now go to the `order` page and fill the `form` and submit the data
+- Go to your `ethereal` account inbox
+- You should have a new email with the structure that we defined before
+
+### Setting error, loading and success states
+
+Now that we can have sent the `email` with the `order` data to the user we can finish setting the states on the `client` that are invole on the submit process
+
+- First; go to the `placeOrder` file and add the following condition on the `for of`
+
+  ```js
+  exports.handler = async (event, context) => {
+    await wait(5000);
+    const body = JSON.parse(event.body);
+
+    const requiredFields = ['email', 'name', 'order'];
+
+    for (const field of requiredFields) {
+      console.log(`Checking if ${field} is ok`);
+      if (!body[field]) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Oops! You are missing the ${field} field`,
+          }),
+        };
+      }
+
+      if (!body.order.length) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            message: `Why would you order nothing?!`,
+          }),
+        };
+      }
+    }
+    ...
+  };
+  ```
+
+  This won't allow to send an `order` without a `pizza`
+
+- Now go to the `order` page component and add a `disabled` property on every `fieldset` so it value will be the `loading` state
+
+```js
+export default function OrderPage({ data }) {
+  ...
+  return (
+    <>
+      <SEO title="Order Pizza!" />
+      <OrderStyles onSubmit={submitOrder}>
+        <fieldset disabled={loading}>
+          <legend>Your info</legend>
+          ...
+        </fieldset>
+        <fieldset className="menu" disabled={loading}>
+          <legend>Menu</legend>
+          ...
+        </fieldset>
+        <fieldset className="order" disabled={loading}>
+          <legend>Order</legend>
+          ...
+        </fieldset>
+        <fieldset disabled={loading}>
+          <h3>
+            Your total is {formatMoney(calculateOrderTotal(order, pizzas))}
+          </h3>
+          ...
+        </fieldset>
+      </OrderStyles>
+    </>
+  );
+}
+```
+
+This will `disable` the entire content of every `fieldset` when the `order` is beng `process` and when it finish to sent the `email` it enable back to it
+
+- Go to the `order` page and test the `disable` fields and the `error` when you don't sent a `pizza` in the `order`
+
+### Creating honey pot to defend against bots
+
+As a precaution we need to set something that prevents the `bots` to maliciously fill the `form` and begin to send multiples request; there are a lot of ways to handle this issue like the `captcha` but we are going to implement one of the easiest ways that is call [honey pot](<https://en.wikipedia.org/wiki/Honeypot_(computing)>)
+
+- First; go to the `order` page component and copy the `email` input
+- Bellow the `email` input paste the new input
+- Change the `type`, `name` and `value` to another thing like `mapleSyrup`(Could be whatever you want but don't use any reference to `honey` that the bots are smart enough to detect those)
+  ```js
+  export default function OrderPage({ data }) {
+   ...
+    return (
+      <>
+        <SEO title="Order Pizza!" />
+        <OrderStyles onSubmit={submitOrder}>
+          <fieldset disabled={loading}>
+            <legend>Your info</legend>
+            <label htmlFor="name">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={values.name}
+              onChange={updateValue}
+            />
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={values.email}
+              onChange={updateValue}
+            />
+            <input
+              type="mapleSyrup"
+              name="mapleSyrup"
+              value={values.mapleSyrup}
+              onChange={updateValue}
+              className="mapleSyrup"
+            />
+          </fieldset>
+          ...
+        </OrderStyles>
+      </>
+    );
+  }
+  ```
+- Go to the `useForm` definition and add a new `state` for the new input
+  ```js
+  export default function OrderPage({ data }) {
+    const pizzas = data.pizzas.nodes;
+    const { values, updateValue } = useForm({
+    name: '',
+    email: '',
+    mapleSyrup: '',
+    });
+    return (...);
+  }
+  ```
+- Now go to `placeOrder` file
+- Go to the `usePizza` hook and add the `mapleSyrup` state to the `body` that we sent to the `serverless` function
+  ```js
+  export default function usePizza({ pizzas, values }) {
+    ...
+    async function submitOrder(e) {
+      ...
+      const body = {
+        order: attachNameAndPrices(order, pizzas),
+        total: formatMoney(calculateOrderTotal(order, pizzas)),
+        name: values.name,
+        email: values.email,
+        mapleSyrup: values.mapleSyrup,
+      };
+        ...
+    }
+    ...
+  }
+  ```
+- Add a condition where if `body` have the `mapleSyrup` input return a `400` status code and a message
+
+  ```js
+  exports.handler = async (event, context) => {
+    const body = JSON.parse(event.body);
+
+    if (body.mapleSyrup) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Robot detected' }),
+      };
+    }
+    ...
+  };
+  ```
+
+- Go to your browser and fill all the inputs including the `mapleSyrup` input bellow the `email` input
+- Submit the form data
+- You should receive an `error` message and don't receive an `email`
+- Finally go to `OrderStyles` in the `styles` directory and hide the `mapleSyrup` input
+  ```js
+  const OrderStyles = styled.form`
+    ... fieldset {
+      ... &.order,
+      &.menu {
+        grid-column: span 1;
+      }
+      .mapleSyrup {
+        display: none;
+      }
+    }
+  `;
+  ```
+  We use `display: none` because the `bots` can't actually check by the `CSS` if the `input` is valid and these `inputs` automatically won't be reached by the `scream readers`
+- Go to the `order` page and you should not the `mapleSyrup` input
+
+### Creating a one-off store setting page
+
+Some times you want a settings `page` where you control a specific `page` and this is what is call `options` or `one-off` pages this means that they still need to be store on the database but there is not going to be multiples of then; we will have just once. In this example, we will have one of these setting pages for the `homepage` where we are going to have the available `slicesmasters` and the `pizzas` available by `slices`, and all of this content will be control on `sanity`.
+
+- First; go to the `sanity/schema` directory
+- Create a new file call `storeSettings.js`
+- Import `MdStore` from `react-icons/md`
+  `import { MdStore as icon } from 'react-icons/md';`
+- Now export an object
+  `export default {}`
+- Add the following configuration
+  ```js
+  export default {
+    name: "storeSettings",
+    title: "Settings",
+    type: "document",
+    icon,
+    fields: [],
+  };
+  ```
+  - `name`: Will be the `name` that we will target the `schema` on the `code`
+  - `title`: The `name` that we will show to the user
+  - `type`: The `type` of the `schema`
+  - `icon`: The image that we will show to the user at the side of the `title`
+  - `fields`: An `array` to define all the `fields` that will have the `schema`
+- Then on the `fields` array add the following objects
+
+  ```js
+  export default {
+    ...
+    fields: [
+      {
+        name: 'name',
+        title: 'Store name',
+        type: 'string',
+        description: 'Name of the store',
+      },
+      {
+        name: 'slicemaster',
+        title: 'Slicemasters Currently Slicing',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'person' }] }],
+      },
+      {
+        name: 'hotSlices',
+        title: 'Hot Slices available in the case',
+        type: 'array',
+        of: [{ type: 'reference', to: [{ type: 'pizza' }] }],
+      },
+    ]
+  }
+  ```
+
+  This will add 3 `fields` to our `schema`:
+
+  - `name` field: This will be presented on the `sanity` dashboard as the `name` of each entry that you add
+  - `slicemaster` field: This will create a `field` that is related to the `person` schema and will allow us to add multiple `persons`
+  - `hotSlices` field: This will create a `field` that will be related to the `pizza` schema and will allow us to add multiple `pizzas`
+
+  And the properties of the `fields` are:
+
+  - `name`: Name that we will target by code
+  - `title`: The name of the field that we are going to show on the `sanity` dashboard
+  - `type`: The type of the `field` and in this case we will have for the `name` a `string` and for the others an `array`
+  - `of`: This defines the elements inside of the `array` of the current `field`. In this case, we will have an `array` of objects that will be `reference` to a `schema` that bring multiple `items`
+
+- Go to your `schema.js` and import the `storeSettings`
+  `import storeSettings from './storeSettings';`
+- Then use the `storeSettings` in the `schemaTypes.concat` function
+  ```js
+  export default createSchema({
+    name: "default",
+    types: schemaTypes.concat([pizza, topping, person, storeSettings]),
+  });
+  ```
+- Start your local `sanity` server
+- On your `sanity`dashboard you should have a `settings` option(DO NOT ADD ANYTHING YET)
+- Now we need to prevent that the user creates multiple stores so we need to change the `sidebar` instead of having a `settings` options; we need an option that goes directly to the `edit` screen when is selected. So on the root of the `sanity` directory create a new file call `sidebar.js`
+- Inside of the file import `react` and `S`(A `sanity` specific)
+  ```js
+  import React from "react";
+  import S from "@sanity/desk-tool/structure-builder";
+  ```
+- Export a function call `sideBar`
+  `export default function Sidebar() {}`
+- Now go to the `sanity.json` file and on the `parts` property add the following:
+  ```js
+  "parts": [
+    ...
+    {
+      "name": "part:@sanity/desk-tool/structure",
+      "path": "./sidebar.js"
+    }
+  ]
+  ```
+  This will let know `sanity` that use our custom `sidebar` and you need to restart your local server when you change this file
+- Go back to the `sidebar` file
+- Return the `list` function of the `S` object from `sanity`
+  ```js
+  export default function Sidebar() {
+    return S.list();
+  }
+  ```
+- Then we are going to call the `title` function with our custom `title`(This will be the `title` of our custom `sidebar`)
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`);
+  }
+  ```
+- You should see on your browser that the `title` change from `content` to `Slick's Slices`(Don't worry if you don't see any content on your dashboard)
+- Now we are going to call the `items` function send an `array` of `listItem`(Create a new sub `item`)
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([S.listItem()]);
+  }
+  ```
+- For the `sub-item` we have a `title`
+  ```js
+  export default function Sidebar() {
+    return S.list()
+      .title(`Slick's Slices`)
+      .items([S.listItem().title("Home Page")]);
+  }
+  ```
+- Go to your browser and now you can see that you only have one `item` call `Home Page`
+- Then we are going to add an `icon` to the `Home Page` item
+  ```js
+  export default function Sidebar() {
+    return S.list()
+      .title(`Slick's Slices`)
+      .items([
+        S.listItem()
+          .title("Home Page")
+          .icon(() => <strong>🔥</strong>),
+      ]);
+  }
+  ```
+- You should see the new `icon` on your browser
+- Now we need to add the `child` of this option in this case will be the `editor` page
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor())
+    ]);
+  }
+  ```
+- Then we will use the `storeSettings schema` to get all the `fields` that we need on the editor page and linked to a `documentId`
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown')))
+    ]);
+  }
+  ```
+  If you see a previews version of your `sanity` dashboard and you click on one of the entry that you did before; you will see a long line of characters at the end of the URL and that is the `document id` and at this case, we send our `document id` that now won't be a random `string` of numbers
+- Now we need to add all the missing `document` items that we have before
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown'))),
+        ...S.documentTypeListItems()
+    ]);
+  }
+  ```
+  This will add for use the other `document` items but you still have the `Settings` option on the `sibebar`
+- The we need to filter the `documentTypeListItems` to eliminate the `Settings` option
+  ```js
+  export default function Sidebar() {
+    return S.list().title(`Slick's Slices`).items([
+      S.listItem()
+        .title('Home Page')
+        .icon(() => <strong>🔥</strong>),
+        .child(S.editor().child(S.editor().schemaType('storeSettings').documentId('downtown'))),
+        ...S.documentTypeListItems().filter(
+        (item) => item.getId() !== `storeSettings`
+      ),
+    ]);
+  }
+  ```
+- Now you can see that the `Home Page` item will let you add the `name` of one store; `slicesmaster` and `pizzas`(Add some and on the next section we will use it on the frontend)
+
+### Custom hook for client-side data fetching
+
+Now that we got our `settings` page for our `homepage` we need to `fetch` this data in the `client`. This data is time-sensitive so this means that when it changes we need to update our `client` side and this makes visible a limitation of `gatsby` because when the data update this may not be available on the `graphql` API; remember that this API is constructed at `build time` so we will have the data that exists on `build time` instead of on the current data if was updated until the site is regenerated again. For this limitation, we will `fetch` directly from the `client` side of the data.
+
+- First; go to the `index.js` file in the `gatsby/page` directory
+- Remove the content of the `return` statement
+- Add the following content:
+  ```js
+  export default function HomePage() {
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div></div>
+    );
+  }
+  ```
+- Now create 2 components call `CurrentSlicing` and `HotSlices` before the `HomePage` component
+
+  ```js
+  function CurrentSlicing() {
+    return (
+      <div>
+        <p>CurrentSlicing</p>
+      </div>
+    );
+  }
+
+  function HotSlices() {
+    return (
+      <div>
+        <p>HotSlices</p>
+      </div>
+    );
+  }
+  ```
+
+- Use both components on the empty `div` in the `HomePage` component
+  ```js
+  export default function HomePage() {
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div>
+          <CurrentSlicing slicesmasters={slicesmasters} />
+          <HotSlices hotSlices={hotSlices} />
+        </div>
+    );
+  }
+  ```
+- Now we can work with the `fetch` of the data but what can't use the `graphql` API we need to target the `sanity` API directly with the `fetch` function but still need an URL to target the API and you obtain this; on your terminal; go to the `sanity` directory and use the following command
+  `sanity graphql list`
+
+You will see an URL that is the one that we use to `fetch` the data. Since we did some changes on `sanity` on the previews section to have those changes available we need to deploy our `graphql` API again to have these updates available using:
+`sanity graphql deploy your_data_set_name`
+
+- Then we are going to do a custom hook that will be in charge of `fetching` and `store` the data so go to the `utils` directory and create a file call `useLastestData.js`
+- In this file import `useEffect` and `useState` from `react`
+  `import { useEffect, useState } from 'react';`
+- Create a function call `useLastestData`
+  `export default function useLatestData() {}`
+- Then create 2 pieces of state one for `hotSlices` and another for `slicesmasters`
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+  }
+  ```
+- Use `useEffect` on the `useLatestData` function
+  ```js
+  useEffect(function () {}, []);
+  ```
+  Since we don't have any dependencies that change on the code we will send an empty array so the `useEffect` only will run when the page renders
+- Grab the URL that you get from `sanity` and paste it on your browser; this will open your `graphql` playground of `sanity`. Since we are on `sanity` the queries are going to be a little different from the `gatsby` queries that we did before but are almost the same. Add the following query to get the `StoreSettings` data on the page
+  ```js
+  query {
+    StoreSettings(id: "downtown") {
+      name
+      slicemaster {
+        name
+      }
+      hotSlices {
+        name
+      }
+    }
+  }
+  ```
+  All the data that you put on the configuration should be show after you click on the play button
+- Go back to the `.env` file
+- Create the following enviroment varibale and add the url that you obtain from the `sanity` command
+  `GATSBY_GRAPHQL_ENDPOINT="https://your.sanity.url"`
+- Go back to `useLastestData` hook and on the `useEffect` use the `fetch` function using the enviroment variable as the url that is going to targe
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {});
+    }, []);
+  }
+  ```
+
+- Add the following to the configuration object
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+    }, []);
+  }
+  ```
+
+  We can't do a `get` request because we need to send the `query` that we want and the `sanity` API will respond to use with the data that we need and we will be sending a `JSON`
+
+- On the object on the `body` property add a `query` property and paste the `query` that you did before on the `graphql` playground
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      });
+    }, []);
+  }
+  ```
+
+- Since the `fetch` is a `async` function we need to wait for it result to work with it response. So first; turn into a `json` the response
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      }).then((res) => res.json());
+    }, []);
+  }
+  ```
+
+- Then we need set the `states` that we create before
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setHotSlices(res.data.StoreSettings.hotSlices);
+          setSlicesmaters(res.data.StoreSettings.slicemaster);
+        });
+    }, []);
+  }
+  ```
+
+- Finally return both `states`
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setHotSlices(res.data.StoreSettings.hotSlices);
+          setSlicesmaters(res.data.StoreSettings.slicemaster);
+        });
+    }, []);
+
+    return {
+      hotSlices,
+      slicesmasters,
+    };
+  }
+  ```
+
+- Go to the `index` file and export the `useLatestData` hook
+  `import useLatestData from '../utils/useLatestData';`
+- Use the hook on the `HomePage` component and send their respective `state` to it component
+
+  ```js
+  export default function HomePage() {
+    const { slicesmasters, hotSlices } = useLatestData();
+
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div>
+          <CurrentSlicing slicesmasters={slicesmasters} />
+          <HotSlices hotSlices={hotSlices} />
+        </div>
+      </div>
+    );
+  }
+  ```
+
+- Go to the [sanity](https://www.sanity.io/) page and log in to your account
+- Choose the project that you create for this example
+- Click on the `settings` tab
+- Then click on the `API` option
+- On the `CORS Origins` section click on `ADD NEW ORIGIN`
+- Add `http://localhost:*`
+- Click on `allow credentials` and add the new origin
+- Run your local server
+- On your browser go to the `homepage`
+- Open your browser inspector
+- Go to the `react` component tab
+- Search for the `CurrentSlicing` or `HotSlices` components
+- You should see the fetch data as it props
