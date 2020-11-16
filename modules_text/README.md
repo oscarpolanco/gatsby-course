@@ -6287,9 +6287,9 @@ We got the client-side part of the code ready to send the submitted data to our 
         ${order
           .map(
             (item) => `<li>
-    <img src="${item.thumbnail}" alt="${item.name}" />
-    ${item.size} ${item.name} - ${item.price}
-  </li>`
+  <img src="${item.thumbnail}" alt="${item.name}" />
+  ${item.size} ${item.name} - ${item.price}
+</li>`
           )
           .join("")}
       </ul>
@@ -6716,3 +6716,263 @@ Some times you want a settings `page` where you control a specific `page` and th
   }
   ```
 - Now you can see that the `Home Page` item will let you add the `name` of one store; `slicesmaster` and `pizzas`(Add some and on the next section we will use it on the frontend)
+
+### Custom hook for client-side data fetching
+
+Now that we got our `settings` page for our `homepage` we need to `fetch` this data in the `client`. This data is time-sensitive so this means that when it changes we need to update our `client` side and this makes visible a limitation of `gatsby` because when the data update this may not be available on the `graphql` API; remember that this API is constructed at `build time` so we will have the data that exists on `build time` instead of on the current data if was updated until the site is regenerated again. For this limitation, we will `fetch` directly from the `client` side of the data.
+
+- First; go to the `index.js` file in the `gatsby/page` directory
+- Remove the content of the `return` statement
+- Add the following content:
+  ```js
+  export default function HomePage() {
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div></div>
+    );
+  }
+  ```
+- Now create 2 components call `CurrentSlicing` and `HotSlices` before the `HomePage` component
+
+  ```js
+  function CurrentSlicing() {
+    return (
+      <div>
+        <p>CurrentSlicing</p>
+      </div>
+    );
+  }
+
+  function HotSlices() {
+    return (
+      <div>
+        <p>HotSlices</p>
+      </div>
+    );
+  }
+  ```
+
+- Use both components on the empty `div` in the `HomePage` component
+  ```js
+  export default function HomePage() {
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div>
+          <CurrentSlicing slicesmasters={slicesmasters} />
+          <HotSlices hotSlices={hotSlices} />
+        </div>
+    );
+  }
+  ```
+- Now we can work with the `fetch` of the data but what can't use the `graphql` API we need to target the `sanity` API directly with the `fetch` function but still need an URL to target the API and you obtain this; on your terminal; go to the `sanity` directory and use the following command
+  `sanity graphql list`
+
+You will see an URL that is the one that we use to `fetch` the data. Since we did some changes on `sanity` on the previews section to have those changes available we need to deploy our `graphql` API again to have these updates available using:
+`sanity graphql deploy your_data_set_name`
+
+- Then we are going to do a custom hook that will be in charge of `fetching` and `store` the data so go to the `utils` directory and create a file call `useLastestData.js`
+- In this file import `useEffect` and `useState` from `react`
+  `import { useEffect, useState } from 'react';`
+- Create a function call `useLastestData`
+  `export default function useLatestData() {}`
+- Then create 2 pieces of state one for `hotSlices` and another for `slicesmasters`
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+  }
+  ```
+- Use `useEffect` on the `useLatestData` function
+  ```js
+  useEffect(function () {}, []);
+  ```
+  Since we don't have any dependencies that change on the code we will send an empty array so the `useEffect` only will run when the page renders
+- Grab the URL that you get from `sanity` and paste it on your browser; this will open your `graphql` playground of `sanity`. Since we are on `sanity` the queries are going to be a little different from the `gatsby` queries that we did before but are almost the same. Add the following query to get the `StoreSettings` data on the page
+  ```js
+  query {
+    StoreSettings(id: "downtown") {
+      name
+      slicemaster {
+        name
+      }
+      hotSlices {
+        name
+      }
+    }
+  }
+  ```
+  All the data that you put on the configuration should be show after you click on the play button
+- Go back to the `.env` file
+- Create the following enviroment varibale and add the url that you obtain from the `sanity` command
+  `GATSBY_GRAPHQL_ENDPOINT="https://your.sanity.url"`
+- Go back to `useLastestData` hook and on the `useEffect` use the `fetch` function using the enviroment variable as the url that is going to targe
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {});
+    }, []);
+  }
+  ```
+
+- Add the following to the configuration object
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+    }, []);
+  }
+  ```
+
+  We can't do a `get` request because we need to send the `query` that we want and the `sanity` API will respond to use with the data that we need and we will be sending a `JSON`
+
+- On the object on the `body` property add a `query` property and paste the `query` that you did before on the `graphql` playground
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      });
+    }, []);
+  }
+  ```
+
+- Since the `fetch` is a `async` function we need to wait for it result to work with it response. So first; turn into a `json` the response
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      }).then((res) => res.json());
+    }, []);
+  }
+  ```
+
+- Then we need set the `states` that we create before
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setHotSlices(res.data.StoreSettings.hotSlices);
+          setSlicesmaters(res.data.StoreSettings.slicemaster);
+        });
+    }, []);
+  }
+  ```
+
+- Finally return both `states`
+
+  ```js
+  export default function useLatestData() {
+    const [hotSlices, setHotSlices] = useState();
+    const [slicesmasters, setSlicesmaters] = useState();
+
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `query {StoreSettings(id: "downtown") { name slicemaster { name } hotSlices { name } } }`,
+        }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setHotSlices(res.data.StoreSettings.hotSlices);
+          setSlicesmaters(res.data.StoreSettings.slicemaster);
+        });
+    }, []);
+
+    return {
+      hotSlices,
+      slicesmasters,
+    };
+  }
+  ```
+
+- Go to the `index` file and export the `useLatestData` hook
+  `import useLatestData from '../utils/useLatestData';`
+- Use the hook on the `HomePage` component and send their respective `state` to it component
+
+  ```js
+  export default function HomePage() {
+    const { slicesmasters, hotSlices } = useLatestData();
+
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <div>
+          <CurrentSlicing slicesmasters={slicesmasters} />
+          <HotSlices hotSlices={hotSlices} />
+        </div>
+      </div>
+    );
+  }
+  ```
+
+- Go to the [sanity](https://www.sanity.io/) page and log in to your account
+- Choose the project that you create for this example
+- Click on the `settings` tab
+- Then click on the `API` option
+- On the `CORS Origins` section click on `ADD NEW ORIGIN`
+- Add `http://localhost:*`
+- Click on `allow credentials` and add the new origin
+- Run your local server
+- On your browser go to the `homepage`
+- Open your browser inspector
+- Go to the `react` component tab
+- Search for the `CurrentSlicing` or `HotSlices` components
+- You should see the fetch data as it props
