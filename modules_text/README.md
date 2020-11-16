@@ -6287,8 +6287,8 @@ We got the client-side part of the code ready to send the submitted data to our 
         ${order
           .map(
             (item) => `<li>
-  <img src="${item.thumbnail}" alt="${item.name}" />
-  ${item.size} ${item.name} - ${item.price}
+<img src="${item.thumbnail}" alt="${item.name}" />
+${item.size} ${item.name} - ${item.price}
 </li>`
           )
           .join("")}
@@ -6976,3 +6976,364 @@ You will see an URL that is the one that we use to `fetch` the data. Since we di
 - Go to the `react` component tab
 - Search for the `CurrentSlicing` or `HotSlices` components
 - You should see the fetch data as it props
+
+## Module 12: Client side data
+
+On this module we will use the data that we optain before from `sanity` for the `homepage` and create the structure of the page and set each step; from the `loading` to the render; to show the data.
+
+### Creating skeleton screen while loading items
+
+Now let get to work with the `loading` part of the `homepage`. Since we need to wait for the request to finish in each page loading; we will need to put some styles and elements that represent this state to the user so we will put animation on each image and a text for this case.
+
+- First; go to the `style` directory and create a new file call `Grids.js`
+- In this new file import `styled` from `styled-components`
+  `import styled from 'styled-components';`
+- Now create a constant call `HomePageGrid` that will be a `styled.div`
+  ```js
+  export const HomePageGrid = styled.div``;
+  ```
+- Add the following style:
+  ```js
+  export const HomePageGrid = styled.div`
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(auto, 1fr));
+  `;
+  ```
+  This will create 2 columns and distribute the space of those columns depending thr size of the container and a `2rem` gap betewn then
+- Go to the `index` file and import `HomePageGrid`
+  `import { HomePageGrid } from '../styles/Grids';`
+- Change the `div` that enclose the `CurrentSlicing` and `HotSlices` component for the `HomePageGrid`
+
+  ```js
+  export default function HomePage() {
+    const { slicesmasters, hotSlices } = useLatestData();
+
+    return (
+      <div className="center">
+        <h2>Best Pizz Downtown!</h2>
+        <p>Open 11am to 11pm Every Single Day</p>
+        <HomePageGrid>
+          <CurrentSlicing slicesmasters={slicesmasters} />
+          <HotSlices hotSlices={hotSlices} />
+        </HomePageGrid>
+      </div>
+    );
+  }
+  ```
+
+- Go back to the `Grids.js` file and create another constant call `ItemGrid` for the grid of each individual item
+  ```js
+  export const ItemGrid = styled.div``;
+  ```
+- Add the following style:
+  ```js
+  export const ItemGrid = styled.div`
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 1fr 1fr;
+  `;
+  ```
+  Like before this will create 2 columns and distribute the size betwen then but with the preview `HomePageGrid` column not the container
+- Now we need to add the `loading` grid. Go to the `components` directory and create a file call `LoadingGrid.js`
+- In this new file import `React` from `react`
+  `import React from 'react';`
+- Export a function call `LoadingGrid`
+  `export default function LoadingGrid() {}`
+- Add a prop call `count` that will represent the number of element that will be show
+  `export default function LoadingGrid({ count }) {}`
+- Import `ItemGrid`
+  `import { ItemGrid } from '../styles/Grids';`
+- Return `ItemGrid` in the `LoadingGrid` component and put 4 `p` tags with a message
+  ```js
+  export default function LoadingGrid({ count }) {
+    return (
+      <ItemGrid>
+        <p>Loading</p>
+        <p>Loading</p>
+        <p>Loading</p>
+        <p>Loading</p>
+      </ItemGrid>
+    );
+  }
+  ```
+- Go to the `index` file and import the `LoadingGrid` component
+  `import LoadingGrid from '../components/LoadingGrid';`
+- Replace the message of the `CurrentSlicing` and `HotSlices` components with the `LoadingGrid` component
+
+  ```js
+  function CurrentSlicing() {
+    console.log(slicesmasters);
+    return (
+      <div>
+        <LoadingGrid />
+      </div>
+    );
+  }
+
+  function HotSlices() {
+    return (
+      <div>
+        <LoadingGrid />
+      </div>
+    );
+  }
+  ```
+
+- Start your local server
+- Go to the homepage and you should see 4 columns with the `Loading` message on 2 rows
+- Send the `count` prop on both `LoadingGrid` with a value of 4
+  `<LoadingGrid count={4} />`
+- Go back to the `LoadingGrid` component file
+- Inside of the `ItemGrid` remove all the current content and use `Array.from` to loop the amount of the `count` prop
+  ```js
+  export default function LoadingGrid({ count }) {
+    return (
+      <ItemGrid>
+         {Array.from({ length: count }, (_, i) => ()}
+      </ItemGrid>
+    );
+  }
+  ```
+  We use `_` because we actually don't gonna be using the first parameter of the function
+- Now add a `div` in the callback of the `Array.from` with a `p` tag with the following content
+  ```js
+  export default function LoadingGrid({ count }) {
+    return (
+      <ItemGrid>
+         {Array.from({ length: count }, (_, i) => (
+           <div>
+            <p>
+              <span className="mark">Loading...</span>
+            </p>
+           </div>
+         )}
+      </ItemGrid>
+    );
+  }
+  ```
+- Then add an `image` as a placeholder for the `loading`
+  ```js
+  export default function LoadingGrid({ count }) {
+   return (
+     <ItemGrid>
+        {Array.from({ length: count }, (_, i) => (
+          <div>
+           <p>
+             <span className="mark">Loading...</span>
+           </p>
+           <img
+             src="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAECAQAAADsOj3LAAAADklEQVR42mNkgANGQkwAAJoABWH6GPAAAAAASUVORK5CYII="
+             className="loading"
+             alt="Loading"
+             width="500"
+             height="400"
+           />
+          </div>
+        )}
+     </ItemGrid>
+   );
+  }
+  ```
+  Use this `className` and `src`; in the future just putting the `width` and `height` should maintain the aspect ratio even it doesn't have an `src` property but this still not yet implemented on all browser that is why we add a black image to help users to maintain the ration
+- Now go back to the `Grids.js` and create another constant call `ItemStyles` to create the styles for an individual item
+  ```js
+  export const ItemStyles = styled.div``;
+  ```
+- Add the following styles:
+  ```js
+  export const ItemStyles = styled.div`
+    text-align: center;
+    position: relative;
+    img {
+      height: auto;
+      font-size: 0;
+    }
+  `;
+  ```
+  As you see we add a `font-size` of `0` because in `CSS` when you align 2 items one at the side of another it adds a space that is not a `margin` or a `padding` and that space is determined by the `font-size` that is why we add `0` so we don't have issues with that extra space
+- Then grab the `p` tag and the `mark` class
+  ```js
+  export const ItemStyles = styled.div`
+    text-align: center;
+    position: relative;
+    img {
+      height: auto;
+      font-size: 0;
+    }
+    p {
+      transform: rotate(-2deg) translateY(-50%);
+      position: absolute;
+      width: 100%;
+      left: 0;
+    }
+    .mark {
+      display: inline;
+    }
+  `;
+  ```
+  This will add a rotaing effect on the `loading` message and put it on the top of the image
+- Grap every image that have a `loading` class and add the following:
+  ```js
+  export const ItemStyles = styled.div`
+    text-align: center;
+    position: relative;
+    img {
+      height: auto;
+      font-size: 0;
+    }
+    p {
+      transform: rotate(-2deg) translateY(-50%);
+      position: absolute;
+      width: 100%;
+      left: 0;
+    }
+    .mark {
+      display: inline;
+    }
+    img.loading {
+      --shine: white;
+      --background: var(--grey);
+      background-image: linear-gradient(
+        90deg,
+        var(--background) 0px,
+        var(--shine) 40px,
+        var(--background) 80px
+      );
+    }
+  `;
+  ```
+  We set 2 variables that represent 2 colors; then we define a `background` for our image and we put a `gradient`(In this case a 90 degrees line) that will change the color on `0`; `40` and `80` pixels
+- Now we need to add a `animation` to our `gradiente` so add the following
+  ```js
+  export const ItemStyles = styled.div`
+    text-align: center;
+    position: relative;
+    img {
+      height: auto;
+      font-size: 0;
+    }
+    p {
+      transform: rotate(-2deg) translateY(-50%);
+      position: absolute;
+      width: 100%;
+      left: 0;
+    }
+    .mark {
+      display: inline;
+    }
+    img.loading {
+      --shine: white;
+      --background: var(--grey);
+      background-image: linear-gradient(
+        90deg,
+        var(--background) 0px,
+        var(--shine) 40px,
+        var(--background) 80px
+      );
+    }
+    animation: shine 1s infinite linear;
+  `;
+  ```
+  This will repeat the `shine` anitmation as long as the `loading` image is on the screem
+- Then we need to create the `shine` animation
+  ```js
+  export const ItemStyles = styled.div`
+    text-align: center;
+    position: relative;
+    img {
+      height: auto;
+      font-size: 0;
+    }
+    p {
+      transform: rotate(-2deg) translateY(-50%);
+      position: absolute;
+      width: 100%;
+      left: 0;
+    }
+    .mark {
+      display: inline;
+    }
+    @keyframes shine {
+      from {
+        background-position: 200px;
+      }
+      to {
+        background-position: -40px;
+      }
+    }
+    img.loading {
+      --shine: white;
+      --background: var(--grey);
+      background-image: linear-gradient(
+        90deg,
+        var(--background) 0px,
+        var(--shine) 40px,
+        var(--background) 80px
+      );
+    }
+    animation: shine 1s infinite linear;
+  `;
+  ```
+- Now go to the `LoadingGrid` component and import the `ItemStyles`
+  `import { ItemGrid, ItemStyles } from '../styles/Grids';`
+- Use `ItemStyles` to replace the `div` on the `Array.from`
+  ```js
+  export default function LoadingGrid({ count }) {
+   return (
+     <ItemGrid>
+        {Array.from({ length: count }, (_, i) => (
+          <ItemStyles>
+           <p>
+             <span className="mark">Loading...</span>
+           </p>
+           <img
+             src="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAECAQAAADsOj3LAAAADklEQVR42mNkgANGQkwAAJoABWH6GPAAAAAASUVORK5CYII="
+             className="loading"
+             alt="Loading"
+             width="500"
+             height="400"
+           />
+          </ItemStyles>
+        )}
+     </ItemGrid>
+   );
+  }
+  ```
+- Then go back to the `index` file and add the `slicesmasters` prop to the `CurrentSlicing` component
+  `function CurrentSlicing({ slicesmasters }) {...}`
+- In the `CurrentSlicing` component ask if there is `slicesmasters` and if not show the `LoadingGrid` component
+  ```js
+  function CurrentSlicing() {
+    return <div>{!slicesmasters && <LoadingGrid count={4} />}</div>;
+  }
+  ```
+  ```js
+  function CurrentSlicing() {
+    return <div>{!slicesmasters && <LoadingGrid count={4} />}</div>;
+  }
+  ```
+- Now we need to ask if we have `slicesmasters` and if that prop es un `empty` array because this represent that there not `slicemasters` available
+  ```js
+  function CurrentSlicing() {
+    return (
+      <div>
+        {!slicesmasters && <LoadingGrid count={4} />}
+        {slicesmasters && !slicesmasters?.length && (
+          <p>No one is working rigth now!</p>
+        )}
+      </div>
+    );
+  }
+  ```
+- Do the same thing with the `HotSlices` component
+  ```js
+  function HotSlices({ hotSlices }) {
+    return (
+      <div>
+        {!hotSlices && <LoadingGrid count={4} />}
+        {hotSlices && !hotSlices?.length && <p>Nothin' in the case</p>}
+      </div>
+    );
+  }
+  ```
