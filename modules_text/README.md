@@ -7552,3 +7552,68 @@ At this time we are going to host the `sanity` side of the application on their 
 - Use the following command: `sanity deploy`
 - It will ask for the project name and you need to put the same name that you defined before
 - It will show you a URL and that represent your production site
+
+### Building our Gatsby site
+
+`Gatsby` is just a static site generator so it will create all the `HTML`; `CSS` and `js` to use on the browser. The build process is pretty quick unless you have to process images on build time but in our case, we use `sanity` to have all the image process that we need.
+
+- On your console; go to the `gatsby` directory
+- Run the following command: `npm run build`
+- Go to your editor
+- You will see a `public` directory is created with a version of the site
+
+### Deploying to netlify
+
+Now finally we are going to create our production site and we will host that site on `netlify` that will help us to build our code; deploy it and re-deploy on `sanity` update. So let's begin
+
+- First; go to the [netligy](https://www.netlify.com/) page and create an account(Free account)
+- After your account is set go to the `netlify dashboard`
+- On the `team overview` tab search for a `create new site` button and click on it
+- Choose the provider that hosts your code(in this example case is `GitHub`)
+- Accept the third party installation on the account that host your repository
+- Give access just to a single repository; do not give full access to your account
+- After that, you should be sent to the `build options and deploy` step
+- Check that the `branch to deploy` input is `master`
+- Add the `build command` input: `npm run build`
+- Then add the `Publish directory` input that in our case is the `public` folder
+- We need some advanced settings but at this moment you can do that just yet; so click on the `deploy site` button
+- The `deploy` will not work because it will look for the `public` directory on the `root` outside of the `gatsby` directory so we need to add the correct path. Click on the `Settings` option on the navbar at the top
+- Choose the `build and deploy` option at the right sidebar
+- Click on the `Edits settings` button on the `Build Settings` section
+- Add the `Base directory` input; in this case `gatsby`
+- Check that the `Publish directory` have `gatsby/ public`
+- Click on the `save` button
+- Now we need to add our `environment variables` so scroll down until you find the `Environment` section
+- Click on the `Edit variables` button
+- Add every `enviroment` variable as you have it on the `.env` file except the `GATSBY_SERVERLESS_BASE` beacuse we can use a `relative` path
+  `GATSBY_SERVERLESS_BASE=/.netlify/functions`
+- Click on the `save` button
+- Now go to the top navbar and click on the `Deploys` option
+- Click on the `Trigger deploy` dropdown
+- Click on the `Clear cache and deploy site`. This will re-run the build and don't use the `cache` that `netlify` use
+- When the `deploy` finish it will get to you a URL that will be your production site
+- But we still have an issue on the `homepage` because `sanity` won't allow the production URL. We need the `deploy` that we did to get the production URL and add it to the `sanity` settings as we did before with our local. So go to the `sanity` dashboard
+- Choose the example project that you did before
+- Go to the `Settings` options
+- Choose `API` in the right
+- Click on the `ADD NEW ORIGIN` button
+- Add the production URL in the input(Since we don't have authentication we don't need to `allow credentials`)
+- Go back to the `netlify` dashboard
+- Go to the `Deploy` option on the `navbar`
+- Click on the `Trigger deploy` dropdown
+- Click on the `Clear cache and deploy site`
+- Wait for the `deploy` to finish and go to the production URL and you should see that the data loads on the `homepage`
+- But we still got something to do; if we update one of the entries on your project `sanity` dashboard that you deploy at the beginning of this module it will not reflect immediately on the site(except the homepage) so we will need to add a `webhook` in `sanity` to push on every data update. So go to the `Settings` option in the navbar of the `netlify` dashboard
+- Go to the `Build & deploy` option at the right
+- Scroll down until you find a `Build hooks` section
+- Click on the `Add build hook` button
+- Add the `Build hook name` input(For the example we choose `Rebuild from Sanity`)
+- Click on the `save` button
+- Copy the URL that appears at the side of the name of the hook(Every single time you hit this URL with a `POST` request it will rebuild your website)
+- On your console go to the `sanity` directory
+- Use the following command: `sanity hook create`
+- Choose the name of the `dataset` that you choose for the example
+- Paste the URL that you obtain from `netlify`
+- Go to the `sanity` dashboard that you deploy at the beginning of the module; update the information and publish
+- Go to the `netlify` site
+- On the `deploy` option you should see that a rebuild is a trigger and on the information should be the name of the hook that you created before
