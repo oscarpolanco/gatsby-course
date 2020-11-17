@@ -7617,3 +7617,17 @@ Now finally we are going to create our production site and we will host that sit
 - Go to the `sanity` dashboard that you deploy at the beginning of the module; update the information and publish
 - Go to the `netlify` site
 - On the `deploy` option you should see that a rebuild is a trigger and on the information should be the name of the hook that you created before
+
+### Hosting the Gatsby website on your own server
+
+Sometimes we already have our own server and that server has some `prefix` that every URL needs to have on our `gatsby` site. Here is how you can update the build process
+
+- First; go to the `gatsby-config` file on the `gatsby` directory
+- And on before the `siteMetadata` add a `pathPrefix` property(for this example we add `/pizza`)
+- Now go to your console and run the build command passing a `flag`
+  `npm run build -- --prefix-paths`
+  This will create a build that put the `prefix` that you define on the `gatsby-config` on the URL of the site; this means that now you can do a `deploy` without the URL issue
+
+#### Note:
+
+- Need to remember that you need to host your `serverless` functions
