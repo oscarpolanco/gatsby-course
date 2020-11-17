@@ -6,7 +6,7 @@ export const HomePageGrid = styled.div`
   grid-template-columns: repeat(2, minmax(auto, 1fr));
 `;
 
-export const ItemGrid = styled.div`
+export const ItemsGrid = styled.div`
   display: grid;
   gap: 2rem;
   grid-template-columns: 1fr 1fr;
@@ -20,7 +20,7 @@ export const ItemStyles = styled.div`
     font-size: 0;
   }
   p {
-    transform: rotate(-2deg) translateY(-50%);
+    transform: rotate(-2deg) translateY(-94%);
     position: absolute;
     width: 100%;
     left: 0;

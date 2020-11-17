@@ -7022,13 +7022,13 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
   }
   ```
 
-- Go back to the `Grids.js` file and create another constant call `ItemGrid` for the grid of each individual item
+- Go back to the `Grids.js` file and create another constant call `ItemsGrid` for the grid of each individual item
   ```js
-  export const ItemGrid = styled.div``;
+  export const ItemsGrid = styled.div``;
   ```
 - Add the following style:
   ```js
-  export const ItemGrid = styled.div`
+  export const ItemsGrid = styled.div`
     display: grid;
     gap: 2rem;
     grid-template-columns: 1fr 1fr;
@@ -7042,18 +7042,18 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
   `export default function LoadingGrid() {}`
 - Add a prop call `count` that will represent the number of element that will be show
   `export default function LoadingGrid({ count }) {}`
-- Import `ItemGrid`
-  `import { ItemGrid } from '../styles/Grids';`
-- Return `ItemGrid` in the `LoadingGrid` component and put 4 `p` tags with a message
+- Import `ItemsGrid`
+  `import { ItemsGrid } from '../styles/Grids';`
+- Return `ItemsGrid` in the `LoadingGrid` component and put 4 `p` tags with a message
   ```js
   export default function LoadingGrid({ count }) {
     return (
-      <ItemGrid>
+      <ItemsGrid>
         <p>Loading</p>
         <p>Loading</p>
         <p>Loading</p>
         <p>Loading</p>
-      </ItemGrid>
+      </ItemsGrid>
     );
   }
   ```
@@ -7085,13 +7085,13 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
 - Send the `count` prop on both `LoadingGrid` with a value of 4
   `<LoadingGrid count={4} />`
 - Go back to the `LoadingGrid` component file
-- Inside of the `ItemGrid` remove all the current content and use `Array.from` to loop the amount of the `count` prop
+- Inside of the `ItemsGrid` remove all the current content and use `Array.from` to loop the amount of the `count` prop
   ```js
   export default function LoadingGrid({ count }) {
     return (
-      <ItemGrid>
+      <ItemsGrid>
          {Array.from({ length: count }, (_, i) => ()}
-      </ItemGrid>
+      </ItemsGrid>
     );
   }
   ```
@@ -7100,7 +7100,7 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
   ```js
   export default function LoadingGrid({ count }) {
     return (
-      <ItemGrid>
+      <ItemsGrid>
          {Array.from({ length: count }, (_, i) => (
            <div>
             <p>
@@ -7108,7 +7108,7 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
             </p>
            </div>
          )}
-      </ItemGrid>
+      </ItemsGrid>
     );
   }
   ```
@@ -7116,7 +7116,7 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
   ```js
   export default function LoadingGrid({ count }) {
    return (
-     <ItemGrid>
+     <ItemsGrid>
         {Array.from({ length: count }, (_, i) => (
           <div>
            <p>
@@ -7131,7 +7131,7 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
            />
           </div>
         )}
-     </ItemGrid>
+     </ItemsGrid>
    );
   }
   ```
@@ -7276,12 +7276,12 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
   `;
   ```
 - Now go to the `LoadingGrid` component and import the `ItemStyles`
-  `import { ItemGrid, ItemStyles } from '../styles/Grids';`
+  `import { ItemsGrid, ItemStyles } from '../styles/Grids';`
 - Use `ItemStyles` to replace the `div` on the `Array.from`
   ```js
   export default function LoadingGrid({ count }) {
    return (
-     <ItemGrid>
+     <ItemsGrid>
         {Array.from({ length: count }, (_, i) => (
           <ItemStyles>
            <p>
@@ -7296,7 +7296,7 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
            />
           </ItemStyles>
         )}
-     </ItemGrid>
+     </ItemsGrid>
    );
   }
   ```
@@ -7337,3 +7337,205 @@ Now let get to work with the `loading` part of the `homepage`. Since we need to 
     );
   }
   ```
+
+### Displaying the home page data
+
+Now that we got data for the `homepage` we actually need to display it on the page but first, we need some more information than the one that we already got
+
+- Go to the `useLatestData` hook
+  ==== This next part is for vs code users ====
+- Search the `query` string and put `gql` inf font of the `string`. This will help us to format the `string`
+- Define a constant before the `useLatestData` hook that will be equal to `String.raw`
+  `const gql = String.raw;`
+  This will fake the `gql` and let you format the `query` string
+  ==== The previews part is for vs code users ====
+- Now Add the following fields on the `query`
+  ```js
+  export default function useLatestData() {
+    ...
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        ...
+        body: JSON.stringify({
+          query: gql`
+            query {
+              StoreSettings(id: "downtown") {
+                name
+                slicemaster {
+                  name
+                  _id
+                  image {
+                    asset {
+                      url
+                      metadata {
+                        lqip
+                      }
+                    }
+                  }
+                }
+                hotSlices {
+                  name
+                  _id
+                  image {
+                    asset {
+                      url
+                      metadata {
+                        lqip
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          `,
+        }),
+      })
+      ...
+    }, []);
+    ...
+  }
+  ```
+  On the image we want the `raw` version to put it on the `src` tag and we ask for a `Low-quality image placeholder`(lqip) to use it when the actual image is not ready yet. Also since we are directly targeting `sanity` we use `_id` instead of just `id`
+- Since we are repeating the same fields for `slicemaster` and `hotSlices` we can separate it into a constant and use it on the `query`. To create a constant call `deeps` and put the part that we repeat on the `query`
+  ```js
+  const deets = `
+    name
+    _id
+    image {
+      asset {
+        url
+        metadata {
+          lqip
+        }
+      }
+    }
+  `;
+  ```
+- Use `deeps` on the `query`
+  ```js
+  export default function useLatestData() {
+    ...
+    useEffect(function () {
+      fetch(process.env.GATSBY_GRAPHQL_ENDPOINT, {
+        ...
+        body: JSON.stringify({
+          query: gql`
+            query {
+              StoreSettings(id: "downtown") {
+                name
+                slicemaster {
+                  ${deets}
+                }
+                hotSlices {
+                  ${deets}
+                }
+              }
+            }
+          `,
+        }),
+      })
+      ...
+    }, []);
+    ...
+  }
+  ```
+- Go to the components folder and create a file called `ItemGrid.js`
+- Import `React`; `ItemsGrid` and `ItemStyles`
+  ```js
+  import React from "react";
+  import { ItemsGrid, ItemStyles } from "../styles/Grids";
+  ```
+- Export a function call `ItemGrid` that recive `items` as prop
+  `export default function ItemGrid({ items }) {}`
+- Return the following content
+  ```js
+  export default function ItemGrid({ items }) {
+    return <ItemsGrid></ItemsGrid>;
+  }
+  ```
+- Map the items prop
+  ```js
+  export default function ItemGrid({ items }) {
+    return (
+      <ItemsGrid>
+        {items.map((item) => ()}
+      </ItemsGrid>
+    );
+  }
+  ```
+- Use `ItemStyles` as a container of the `item` inside of the `map` fucntion
+  ```js
+  export default function ItemGrid({ items }) {
+  return (
+    <ItemsGrid>
+      {items.map((item) => (
+        <ItemStyles></ItemStyles>
+      )}
+    </ItemsGrid>
+  );
+  }
+  ```
+- Add the following content
+  ```js
+  export default function ItemGrid({ items }) {
+  return (
+    <ItemsGrid>
+      {items.map((item) => (
+        <ItemStyles>
+          <p>
+          <span className="mark">{item.name}</span>
+          </p>
+          <img
+            width="500"
+            height="400"
+            src={`${item.image.asset.url}?w=500&h=400&fit=crop`}
+            alt={item.name}
+            style={{
+              background: `url(${item.image.asset.metadata.lqiq})`,
+              backgroundSize: 'cover',
+            }}
+          />
+        </ItemStyles>
+      )}
+    </ItemsGrid>
+  );
+  }
+  ```
+  Since we are using the `raw` image sent by `sanity` the image could be huge and take a lot of time to load but `sanity` can receive `query` params to send the actual size that we need and some more options. We still need time to load the image so in the meantime, we add a `background` image using that we get on the `lqip` property that we use before
+- Now go back to the `index` file import the `ItemGrid` component
+- On the `CurrentSlicing` as if we got `slicemasters` and if we got it to use the `ItemGrid` component sending `slicemasters` as items
+  ```js
+  function CurrentSlicing({ slicesmasters }) {
+    return (
+      <div>
+        <h2 className="center">
+          <span className="mark tilt">Slicemasters On</span>
+        </h2>
+        <p>Standing by, ready to slice you up!</p>
+        {!slicesmasters && <LoadingGrid count={4} />}
+        {slicesmasters && !slicesmasters?.length && (
+          <p>No one is working rigth now!</p>
+        )}
+        {slicesmasters?.length && <ItemGrid items={slicesmasters} />}
+      </div>
+    );
+  }
+  ```
+- Do the same with the `HotSlices` component
+  ```js
+  function HotSlices({ hotSlices }) {
+    return (
+      <div>
+        <h2 className="center">
+          <span className="mark tilt">Hot Slices On</span>
+        </h2>
+        <p>Come on by, buy the slice </p>
+        {!hotSlices && <LoadingGrid count={4} />}
+        {hotSlices && !hotSlices?.length && <p>Nothin' in the case</p>}
+        {hotSlices?.length && <ItemGrid items={hotSlices} />}
+      </div>
+    );
+  }
+  ```
+- Start your local server
+- Go to the `homepage` and check all the data is display correctly
