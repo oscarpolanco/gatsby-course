@@ -7539,3 +7539,16 @@ Now that we got data for the `homepage` we actually need to display it on the pa
   ```
 - Start your local server
 - Go to the `homepage` and check all the data is display correctly
+
+## Module 13: Building deployment and Responsive design
+
+In this module, we will be learning how to deploy our site and `cms` and finish the styling of the site.
+
+### Building and deploying our headless Sanity CMS
+
+At this time we are going to host the `sanity` side of the application on their servers that will pretty easy
+
+- First; on your console go to the `sanity` directory
+- Use the following command: `sanity deploy`
+- It will ask for the project name and you need to put the same name that you defined before
+- It will show you a URL and that represent your production site
