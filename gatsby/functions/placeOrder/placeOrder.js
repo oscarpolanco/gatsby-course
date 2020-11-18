@@ -32,14 +32,11 @@ function generateOrderEmail({ order, total }) {
   </div>`;
 }
 
-exports.handler = async (event, context) => {
-  const body = JSON.parse(event.body);
+module.exports = async (req, res) => {
+  const { body } = req;
 
   if (body.mapleSyrup) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'Robot detected' }),
-    };
+    return res.status(400).json({ message: 'Robot detected' });
   }
 
   const requiredFields = ['email', 'name', 'order'];
@@ -47,21 +44,15 @@ exports.handler = async (event, context) => {
   for (const field of requiredFields) {
     console.log(`Checking if ${field} is ok`);
     if (!body[field]) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: `Oops! You are missing the ${field} field`,
-        }),
-      };
+      return res.status(400).json({
+        message: `Oops! You are missing the ${field} field`,
+      });
     }
 
     if (!body.order.length) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: `Why would you order nothing?!`,
-        }),
-      };
+      return res.status(400).json({
+        message: `Why would you order nothing?!`,
+      });
     }
   }
 
@@ -73,8 +64,5 @@ exports.handler = async (event, context) => {
   });
   console.log(info);
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Success' }),
-  };
+  return res.status(200).json({ message: 'Success' });
 };

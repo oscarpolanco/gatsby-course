@@ -13,3 +13,5 @@ public/
 config/
 dist/
 
+# vercel
+.vercel
