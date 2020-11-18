@@ -7978,3 +7978,72 @@ Now we going to fix some warnings to make the site responsive. So let begin
   `;
   ```
   This will eliminate the `PREV` and `NEXT` word and we update the `font` size for smaller sizes
+
+### Deploying to vercel
+
+Now we going to host the project on [vercel](https://vercel.com/) to have multiple options at the time of deciding where to host our project(They are more options but the important is to practice)
+
+- First; go to the `functions` directory
+- Enter to the `hello.js` file in the `hello` directory
+- Change the function to use `module.exports`
+  ```js
+  module.exports = async (event, context) => {...}
+  ```
+- Then update the parameters to recive `req` and `res` and return the content of the funtion
+  ```js
+  module.exports = async (req, res) => ({
+    statusCode: 200,
+    body: "Hello!!",
+  });
+  ```
+- On your terminal go to the `gatsby` directory
+- Install `nodemailer` using: `npm install nodemailer`
+  You don't need the `package.json` inside of the `placeOrder` directory; `vercel` will target the `packa.json` at the root of the `gatsby` directory
+- Now go to the `placeHolder` file in the `placeHolder` directory
+- Update the `handler` function to use `module.exports` and to receive `req` and `res` as a parameter
+- Then destructure the `body` from the `req` parameter
+  `const { body } = req;`
+- Now on the `body.mapleSyrup` condition update the return statement like this
+  ```js
+  if (body.mapleSyrup) {
+    return res.status(400).json({ message: "Robot detected" });
+  }
+  ```
+- Change the others return statements
+
+  ```js
+  for (const field of requiredFields) {
+    console.log(`Checking if ${field} is ok`);
+    if (!body[field]) {
+      return res.status(400).json({
+        message: `Oops! You are missing the ${field} field`,
+      });
+    }
+
+    if (!body.order.length) {
+      return res.status(400).json({
+        message: `Why would you order nothing?!`,
+      });
+    }
+  }
+  ...
+  return res.status(200).json({ message: 'Success' });
+  ```
+
+- Go to the `vercel` page and signup(Remember just do not give permission for all repositories)
+- On your terminal you need to install the `vercel cli` using:
+  `npm install -g vercel`
+- Now use the `login` command using: `vercel login`
+  This will send you an email and you need to click on verify
+- Now on your terminal use the `vercel` command(Make sure that you are on the `gatsby` directory)
+- Type `y` for the first question
+- Choose your account
+- We don't have an exiting project so type `n` for the question
+- Put the name of your project(I use the same name as the repo)
+- Click enter on the question because we are on the `gatsby` directory
+- Type `n` because we don't want to override those commands
+- Copy the URL that they give you and use it on the browser. This will show you the logs of the `deploy`
+- When the `deploy` is finished click on the `visit` button at the top
+- Copy the `URL` and make the `sanity` process to allow this `URL`
+- Now re visits the `URL` that `vercel` gave you for `production`
+- The `homepage` should be up and running
