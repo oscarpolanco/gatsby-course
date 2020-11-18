@@ -7631,3 +7631,350 @@ Sometimes we already have our own server and that server has some `prefix` that 
 #### Note:
 
 - Need to remember that you need to host your `serverless` functions
+
+### Making the website responsive
+
+Now we going to fix some warnings to make the site responsive. So let begin
+
+- First; go to the `Footer.js` file on the `components` directory
+- Add a `class` call `center` on the `footer` tag
+  ```js
+  export default function Footer() {
+    return <footer className="center">...</footer>;
+  }
+  ```
+- Start your local server and go to the `homepage`
+- You should see the `footer` text on the center
+- Open the browser inspector
+- You should see a classic `react` warning
+- Go to the `LoadingGrid` file on the `components` directory
+- Add a key on the `ItemStyle`
+  ```js
+  export default function LoadingGrid({ count }) {
+    return (
+      <ItemsGrid>
+        {Array.from({ length: count }, (_, i) => (
+          <ItemStyles key={`loader-${i}`}>...</ItemStyles>
+        ))}
+      </ItemsGrid>
+    );
+  }
+  ```
+- Now go to the `ItemGrid` file on the `components` directory
+- Add a key on `ItemStyles`
+  ```js
+  export default function ItemGrid({ items }) {
+    return (
+      <ItemsGrid>
+        {items.map((item) => (
+          <ItemStyles key={item._id}>...</ItemStyles>
+        ))}
+      </ItemsGrid>
+    );
+  }
+  ```
+- Go back to your browser and the `warning` should be gone
+- Now go to the `slicemaster` page and on the console, you should see a `react` warning
+- Then go to the `Pagination` file on the `components` directory
+- Add a `key` on the `Link` component inside of the `Array.from` callback function
+  ```js
+  return (
+    <PaginationStyles>
+      ...
+      {Array.from({ length: totalPages }).map((_, i) => (
+        <Link
+          className={currentPage === 1 && i === 0 ? "current" : ""}
+          to={`${base}/${i > 0 ? i + 1 : ""}`}
+          key={`page-${i}`}
+        >
+          {i + 1}
+        </Link>
+      ))}
+      ...
+    </PaginationStyles>
+  );
+  ```
+- Go to the `slicemaster` page on the browser
+- You should not see the `react` warning on the console
+- Now we are going to be working with the `nav`. Resize the browser with the help of the simulator of the inspector
+- You will see that we have an issue in the `nav` in about `800px` size
+- Go to the `Nav` file on the `components` directory
+- On `NavStyles` add the following on the `anchor` rule:
+  ```js
+  const NavStyles = styled.nav`
+    .logo {
+      transform: translateY(-25%);
+      }
+    ul {...}
+    li {...}
+    a {
+      font-size: 3rem;
+      text-decoration: none;
+      &:hover {
+        color: var(--red);
+      }
+      @media (max-width: 800px) {
+        font-size: 2rem;
+      }
+    }
+  `;
+  ```
+  This will update the `font-size` to be a little smaller
+- But you still see that the options of the `nav` go outside of the container for smaller sizes so we will create 2 rows; one for the logo and the others for the options so everything can fit on smaller sizes. Do a `media query` with the following rules
+  ```js
+  const NavStyles = styled.nav`
+    .logo {
+      transform: translateY(-25%);
+      }
+    ul {...}
+    li {...}
+    a {
+      font-size: 3rem;
+      text-decoration: none;
+      &:hover {
+        color: var(--red);
+      }
+      @media (max-width: 800px) {
+        font-size: 2rem;
+      }
+    }
+    @media (max-width: 600px) {
+    --columns: 4;
+    ul {
+      grid-template-rows: auto auto;
+      grid-template-columns: repeat(var(--columns), 1fr);
+    }
+  }
+  `;
+  ```
+  Now you will see that on the size that we specify on the `media query` is will pass some of the options to a row bellow
+- Now on the `li` of the logo put a class call `logo-item`
+  ```js
+  <li className="logo-item">
+    <Link to="/">
+      <Logo />
+    </Link>
+  </li>
+  ```
+- Then add the following on the `media query` that we did before
+  ```js
+  const NavStyles = styled.nav`
+    .logo {
+      transform: translateY(-25%);
+      }
+    ul {...}
+    li {...}
+    a {
+      font-size: 3rem;
+      text-decoration: none;
+      &:hover {
+        color: var(--red);
+      }
+      @media (max-width: 800px) {
+        font-size: 2rem;
+      }
+    }
+    @media (max-width: 600px) {
+    --columns: 4;
+    ul {
+      grid-template-rows: auto auto;
+      grid-template-columns: repeat(var(--columns), 1fr);
+    }
+    .logo-item {
+      order: 0;
+      grid-column: 1 /-1;
+    }
+    .logo {
+      transform: none;
+    }
+  }
+  `;
+  ```
+  This will put the logo at the first position then it will take from the start of the column(`1`) to the end(`-1`) and eliminate the `transform` style that pushes the `logo` to the top
+- Center the `ul` items
+  ```js
+  @media (max-width: 600px) {
+    --columns: 4;
+    ul {
+      grid-template-rows: auto auto;
+      grid-template-columns: repeat(var(--columns), 1fr);
+    }
+    .logo-item {
+      order: 0;
+      grid-column: 1 /-1;
+      justify-items: center;
+    }
+  }
+  ```
+- Then add some space and a border bellow the `nav`
+  ```js
+  @media (max-width: 600px) {
+    --columns: 4;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--grey);
+    padding-bottom: 2rem;
+    ul {
+      grid-template-rows: auto auto;
+      grid-template-columns: repeat(var(--columns), 1fr);
+    }
+    .logo-item {
+      order: 0;
+      grid-column: 1 /-1;
+      justify-items: center;
+    }
+  }
+  ```
+- But on smaller sizes still have some issue so add the following `media query`
+  ```js
+  const NavStyles = styled.nav`
+    .logo {
+      transform: translateY(-25%);
+      }
+    ul {...}
+    li {...}
+    a {
+      font-size: 3rem;
+      text-decoration: none;
+      &:hover {
+        color: var(--red);
+      }
+      @media (max-width: 800px) {
+        font-size: 2rem;
+      }
+    }
+    @media (max-width: 600px) {
+    --columns: 4;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--grey);
+    padding-bottom: 2rem;
+    ul {
+      grid-template-rows: auto auto;
+      grid-template-columns: repeat(var(--columns), 1fr);
+      justify-items: center;
+    }
+    .logo-item {
+      order: 0;
+      grid-column: 1 /-1;
+    }
+  }
+  @media (max-width: 500px) {
+    --columns: 2;
+  }
+  `;
+  ```
+  This will target the templates columns that we use the variable
+- Now continue with the `homepage` we need to fix the names of the items on the page that on smallers sizes are a mess and the items position as well. Go to the `Grid.js` file on the `styles` directory
+- Search for `ItemStyles` and add the following on the `p` rule
+  ```js
+  p {
+    top: 0;
+    transform: rotate(-2deg) translateY(-10px);
+    position: absolute;
+    width: 100%;
+    left: 0;
+    margin: 0;
+    font-size: 2rem;
+    font-size: clamp(12px, 5vw, 20px);
+  }
+  ```
+  We add a `top` that will push the title to the `top`of the image; eliminate the spaces of the `p` tag with the `margin` property; update the `transform` to push a little bit outside of the image the title and change the `font-size` to fit for smaller sizes
+- Then we need that the `slicemasters` and the `hotSlices` are on one column for smaller sizes. So on the `HomePageGrid` on the same file as before and add a `columns` variable and add `2` then update the `grip-template-columns` property to use the variable
+  ```js
+  export const HomePageGrid = styled.div`
+    display: grid;
+    gap: 2rem;
+    --columns: 2;
+    grid-template-columns: repeat(var(--columns), minmax(auto, 1fr));
+  `;
+  ```
+- Then create the following `media query` for smaller sizes
+  ```js
+  export const HomePageGrid = styled.div`
+    display: grid;
+    gap: 2rem;
+    --columns: 2;
+    grid-template-columns: repeat(var(--columns), minmax(auto, 1fr));
+    @media (max-width: 800px) {
+      --columns: 1;
+    }
+  `;
+  ```
+  This will put the `slicesmaster` and `hotSlices` in one column; one on top of the other
+- Now go to the `pizzas` page
+- When you resize the page you will that the filter has a lot of page space so we need to put it a little smaller. Go to the `ToppingsFilter` file on the `components` directory
+- On the `ToppingsStyles` search for the `anchor` rule
+- Add the following `font-size`
+  ```js
+  const ToppingsStyles = styled.div`
+    ...
+    a {
+      ...
+      font-size: clamp(1.5rem, 1.4vw, 2.5rem);
+      .count {...}
+      &[aria-current='page'] {...}
+    }
+  `;
+  ```
+- Now go to the `order` page and see when you resize the page it will change the `menu` items because it will not have enough space. So we will add just one column for smaller sizes. So go to the `order.js` file on the `page` directory
+- On the `OrderStyles` add the following `media query`
+  ```js
+  const OrderStyles = styled.form`
+    ...
+    fieldset {
+      ...
+      &.order,
+      &.menu {... }
+      .mapleSyrup {... }
+      @media (max-width: 900px) {
+        &.menu,
+        &.order {
+          grid-column: span 2;
+        }
+      }
+    }
+  `;
+  ```
+  This will update the column to take the complete space so the `menu` will be on top of the `order`
+- Then go to the `slicemasters` page and resize the page to a smaller size and see that the `pagination` need some work for these sizes
+- Go to the `Pagination` file on the `components` directory
+- Add a `span` with a class called `word` on the `Prev` and `Next` and a `title` for accessibility on each `link` because we will eliminate those words for smaller sizes
+  ```js
+  return (
+    <PaginationStyles>
+      <Link
+        title="Prev Page"
+        disabled={!hasPrevPage}
+        to={`${base}/${prevPage}`}
+      >
+        ← <span className="word">Prev</span>
+      </Link>
+      {Array.from({ length: totalPages }).map((_, i) => (...))}
+      <Link
+        title="Next Page"
+        disabled={!hasNextPage}
+        to={`${base}/${nextPage}`}
+      >
+        <span className="word">Next</span> →
+      </Link>
+    </PaginationStyles>
+  );
+  ```
+- On the `PaginationStyles` add the following:
+  ```js
+  const PaginationStyles = styled.div`
+    ...
+    & > * {
+      ...
+      &[aria-current],
+      &.current {...}
+      &[disabled] {...}
+    }
+    @media (max-width: 800px) {
+      .word {
+        display: none;
+      }
+      font-size: 1.4rem;
+    }
+  `;
+  ```
+  This will eliminate the `PREV` and `NEXT` word and we update the `font` size for smaller sizes
