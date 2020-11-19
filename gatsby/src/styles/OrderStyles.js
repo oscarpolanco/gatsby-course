@@ -24,6 +24,11 @@ const OrderStyles = styled.form`
         grid-column: span 2;
       }
     }
+    @media (max-width: 330px) {
+      input {
+        max-width: 18rem;
+      }
+    }
   }
 `;
 

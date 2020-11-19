@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 
 const MenuItemsStyles = styled.div`
+  --columns: 100px 1fr;
   display: grid;
-  grid-template-columns: 100px 1fr;
+  grid-template-columns: var(--columns);
   grid-template-rows: 1fr 1fr;
   gap: 0 1.3rem;
   align-content: center;
@@ -31,6 +32,12 @@ const MenuItemsStyles = styled.div`
     right: 0;
     box-shadow: none;
     line-height: 1rem;
+  }
+  @media (max-width: 480px) {
+    --columns: 1fr;
+    button + button {
+      margin: 0;
+    }
   }
 `;
 

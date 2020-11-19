@@ -6,9 +6,13 @@ import Pagination from '../components/Pagination';
 import SEO from '../components/SEO';
 
 const SlicemasterGrid = styled.div`
+  --min_size: 310px;
   display: grid;
   grid-gap: 2rem;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--min_size), 1fr));
+  @media (max-width: 889px) {
+    --min_size: 250px;
+  }
 `;
 
 const SlicemasterStyles = styled.div`
@@ -40,6 +44,7 @@ const SlicemasterStyles = styled.div`
 
 export default function SlicemastersPage({ data, pageContext }) {
   const slicemasters = data.slicemasters.nodes;
+
   return (
     <>
       <SEO title={`Slicemasters - Page ${pageContext.currentPage || 1}`} />
