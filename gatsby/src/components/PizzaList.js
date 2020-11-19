@@ -23,6 +23,11 @@ const PizzaStyles = styled.div`
   p {
     margin: 0;
   }
+  @media (max-width: 380px) {
+    .gatsby-image-wrapper {
+      width: 76vw;
+    }
+  }
 `;
 
 function SinglePizza({ pizza }) {
